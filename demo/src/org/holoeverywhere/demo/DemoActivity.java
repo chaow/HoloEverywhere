@@ -1,8 +1,11 @@
 
 package org.holoeverywhere.demo;
 
-import org.holoeverywhere.addon.SlidingMenu.SlidingMenuA;
+import org.holoeverywhere.ThemeManager;
+import org.holoeverywhere.addon.AddonSlidingMenu;
+import org.holoeverywhere.addon.AddonSlidingMenu.AddonSlidingMenuA;
 import org.holoeverywhere.app.Activity;
+import org.holoeverywhere.app.Activity.Addons;
 import org.holoeverywhere.app.Fragment;
 import org.holoeverywhere.demo.fragments.AboutFragment;
 import org.holoeverywhere.demo.fragments.MainFragment;
@@ -13,9 +16,11 @@ import org.holoeverywhere.demo.widget.DemoItem;
 import org.holoeverywhere.demo.widget.DemoListRowView;
 import org.holoeverywhere.widget.ListView;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentManager.OnBackStackChangedListener;
 import android.support.v4.app.FragmentTransaction;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,11 +32,10 @@ import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.slidingmenu.lib.SlidingMenu;
 
-public class DemoActivity extends Activity {
+@Addons(Activity.ADDON_SLIDING_MENU)
+public class DemoActivity extends Activity implements OnBackStackChangedListener {
     private final class NavigationAdapter extends DemoAdapter implements
             OnItemClickListener {
-        private int lastSelection = -1;
-
         public NavigationAdapter() {
             super(DemoActivity.this);
         }
@@ -46,9 +50,15 @@ public class DemoActivity extends Activity {
         }
 
         public void onItemSelected(int position, boolean setData) {
-            if (lastSelection != position) {
-                lastSelection = position;
-                getIntent().putExtra(PAGE, position);
+            if (position < 0) {
+                position = 0;
+            }
+            if (mCurrentPage != position || setData && getSupportFragmentManager()
+                    .getBackStackEntryCount() > 0) {
+                mCurrentPage = position;
+                if (mOnMenuClickListener != null) {
+                    mOnMenuClickListener.onMenuClick(position);
+                }
                 if (setData) {
                     ((NavigationItem) getItem(position)).onClick(null);
                 }
@@ -71,7 +81,7 @@ public class DemoActivity extends Activity {
             DemoListRowView view = makeView(convertView, parent);
             view.setLabel(title);
             view.setSelectionHandlerColorResource(R.color.holo_blue_dark);
-            view.setSelectionHandlerVisiblity(position == navigationAdapter.lastSelection);
+            view.setSelectionHandlerVisiblity(position == mCurrentPage);
             return view;
         }
 
@@ -85,102 +95,142 @@ public class DemoActivity extends Activity {
             postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    requireSlidingMenu().showContent();
+                    addonSlidingMenu().showContent();
                 }
             }, 100);
         }
     }
 
-    public void postDelayed(Runnable runnable, long delay) {
-        if (handler == null) {
-            handler = new Handler(getMainLooper());
-        }
-        handler.postDelayed(runnable, delay);
+    public static interface OnMenuClickListener {
+        public void onMenuClick(int position);
     }
 
-    private Handler handler;
-    private static final String PAGE = "page";
-    private NavigationAdapter navigationAdapter;
+    public static final String KEY_DISABLE_MUSIC = "disableMusic";
+    private static final String KEY_PAGE = "page";
+    private boolean mCreatedByThemeManager = false;
+    private int mCurrentPage = -1;
+    private boolean mDisableMusic = false;
+    private boolean mFirstRun;
+    private Handler mHandler;
+    private NavigationAdapter mNavigationAdapter;
+    private OnMenuClickListener mOnMenuClickListener;
+    private boolean mStaticSlidingMenu;
+
+    public AddonSlidingMenuA addonSlidingMenu() {
+        return addon(AddonSlidingMenu.class);
+    }
 
     private int computeMenuWidth() {
         return (int) getResources().getFraction(R.dimen.demo_menu_width,
                 getResources().getDisplayMetrics().widthPixels, 1);
     }
 
+    public boolean isDisableMusic() {
+        return mDisableMusic;
+    }
+
     private View makeMenuView(Bundle savedInstanceState) {
         return prepareMenuView(getLayoutInflater().inflate(R.layout.menu), savedInstanceState);
     }
 
-    protected Holo onCreateConfig(Bundle savedInstanceState) {
-        Holo config = super.onCreateConfig(savedInstanceState);
-        config.requireSlidingMenu = true;
-        return config;
+    @Override
+    @SuppressLint("NewApi")
+    public void onBackPressed() {
+        if (!getSupportFragmentManager().popBackStackImmediate()) {
+            PlaybackService.pause(true);
+            finish();
+        }
     }
 
-    private View prepareMenuView(View view, Bundle savedInstanceState) {
-        navigationAdapter = new NavigationAdapter();
-        navigationAdapter.add(MainFragment.class, R.string.demo);
-        navigationAdapter.add(SettingsFragment.class, R.string.settings);
-        navigationAdapter.add(OtherFragment.class, R.string.other);
-        navigationAdapter.add(AboutFragment.class, R.string.about);
-        navigationAdapter.onItemSelected(getIntent().getIntExtra(PAGE, 0),
-                savedInstanceState == null);
-        ListView list = (ListView) view.findViewById(R.id.list);
-        list.setAdapter(navigationAdapter);
-        list.setOnItemClickListener(navigationAdapter);
-        return view;
+    @Override
+    public void onBackStackChanged() {
+        if (mStaticSlidingMenu) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(
+                    getSupportFragmentManager().getBackStackEntryCount() > 0);
+        }
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        mFirstRun = savedInstanceState == null;
+        // This line restore instance state when we are change theme and
+        // activity restarts
+        savedInstanceState = instanceState(savedInstanceState);
         super.onCreate(savedInstanceState);
 
-        PlaybackService.onCreate();
+        mCreatedByThemeManager = getIntent().getBooleanExtra(
+                ThemeManager.KEY_CREATED_BY_THEME_MANAGER, false);
+        if (mCreatedByThemeManager) {
+            mFirstRun = false;
+        }
+
+        if (savedInstanceState != null) {
+            mDisableMusic = savedInstanceState.getBoolean(KEY_DISABLE_MUSIC, false);
+            mCurrentPage = savedInstanceState.getInt(KEY_PAGE, 0);
+        }
 
         final ActionBar ab = getSupportActionBar();
         ab.setTitle(R.string.library_name);
-        ab.setDisplayHomeAsUpEnabled(true);
 
         setContentView(R.layout.content);
 
-        final SlidingMenuA addonSM = requireSlidingMenu();
+        final AddonSlidingMenuA addonSM = addonSlidingMenu();
         final SlidingMenu sm = addonSM.getSlidingMenu();
 
         View menu = findViewById(R.id.menu);
         if (menu == null) {
             // Phone
+            mStaticSlidingMenu = false;
+            ab.setDisplayHomeAsUpEnabled(true);
             addonSM.setBehindContentView(makeMenuView(savedInstanceState));
+            addonSM.setSlidingActionBarEnabled(true);
             sm.setBehindWidth(computeMenuWidth());
             sm.setTouchModeAbove(SlidingMenu.TOUCHMODE_MARGIN);
             sm.setSlidingEnabled(true);
         } else {
             // Tablet
+            mStaticSlidingMenu = true;
             addonSM.setBehindContentView(new View(this)); // dummy view
             sm.setTouchModeAbove(SlidingMenu.TOUCHMODE_NONE);
             sm.setSlidingEnabled(false);
-
             prepareMenuView(menu, savedInstanceState);
         }
+
+        getSupportFragmentManager().addOnBackStackChangedListener(this);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getSupportMenuInflater().inflate(R.menu.main, menu);
-        if (PlaybackService.isDisable()) {
+        if (mDisableMusic) {
             menu.findItem(R.id.disableMusic).setVisible(false);
         }
         return true;
     }
 
     @Override
+    protected void onDestroy() {
+        PlaybackService.pause(true);
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.disableMusic:
-                PlaybackService.disable();
-                supportInvalidateOptionsMenu();
+                if (!mDisableMusic) {
+                    mDisableMusic = true;
+                    PlaybackService.pause(true);
+                    supportInvalidateOptionsMenu();
+                }
                 break;
             case android.R.id.home:
-                requireSlidingMenu().toggle();
+                if (!mStaticSlidingMenu
+                        && getSupportFragmentManager().getBackStackEntryCount() == 0) {
+                    addonSlidingMenu().toggle();
+                } else {
+                    onBackPressed();
+                }
                 break;
             default:
                 return super.onOptionsItemSelected(item);
@@ -190,20 +240,53 @@ public class DemoActivity extends Activity {
 
     @Override
     protected void onPause() {
-        PlaybackService.onPause();
+        PlaybackService.pause(false);
         super.onPause();
     }
 
     @Override
-    protected void onRestart() {
-        PlaybackService.ignore();
-        super.onRestart();
+    protected void onPostCreate(Bundle savedInstanceState) {
+        savedInstanceState = instanceState(savedInstanceState);
+        if (mCreatedByThemeManager && savedInstanceState != null) {
+            savedInstanceState.putBoolean("SlidingActivityHelper.open", false);
+            savedInstanceState.putBoolean("SlidingActivityHelper.secondary", false);
+        }
+        super.onPostCreate(savedInstanceState);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        PlaybackService.onResume(this);
+        if (!mDisableMusic) {
+            PlaybackService.play();
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(KEY_DISABLE_MUSIC, mDisableMusic);
+        outState.putInt(KEY_PAGE, mCurrentPage);
+    }
+
+    public void postDelayed(Runnable runnable, long delay) {
+        if (mHandler == null) {
+            mHandler = new Handler(getMainLooper());
+        }
+        mHandler.postDelayed(runnable, delay);
+    }
+
+    private View prepareMenuView(View view, Bundle savedInstanceState) {
+        mNavigationAdapter = new NavigationAdapter();
+        mNavigationAdapter.add(MainFragment.class, R.string.demo);
+        mNavigationAdapter.add(SettingsFragment.class, R.string.settings);
+        mNavigationAdapter.add(OtherFragment.class, R.string.other);
+        mNavigationAdapter.add(AboutFragment.class, R.string.about);
+        mNavigationAdapter.onItemSelected(mCurrentPage, mFirstRun);
+        ListView list = (ListView) view.findViewById(R.id.list);
+        list.setAdapter(mNavigationAdapter);
+        list.setOnItemClickListener(mNavigationAdapter);
+        return view;
     }
 
     public void replaceFragment(Fragment fragment) {
@@ -221,7 +304,7 @@ public class DemoActivity extends Activity {
         ft.commit();
     }
 
-    public SlidingMenuA requireSlidingMenu() {
-        return requireAddon(org.holoeverywhere.addon.SlidingMenu.class).activity(this);
+    public void setOnMenuClickListener(OnMenuClickListener onMenuClickListener) {
+        mOnMenuClickListener = onMenuClickListener;
     }
 }

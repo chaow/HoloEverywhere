@@ -1,16 +1,23 @@
 
 package org.holoeverywhere.app;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.holoeverywhere.HoloEverywhere;
+import org.holoeverywhere.HoloEverywhere.PreferenceImpl;
 import org.holoeverywhere.IHolo;
 import org.holoeverywhere.LayoutInflater;
 import org.holoeverywhere.LayoutInflater.LayoutInflaterCreator;
-import org.holoeverywhere.Setting;
 import org.holoeverywhere.SystemServiceManager;
 import org.holoeverywhere.SystemServiceManager.SuperSystemService;
 import org.holoeverywhere.ThemeManager;
 import org.holoeverywhere.ThemeManager.SuperStartActivity;
-import org.holoeverywhere.app.Application.Config.PreferenceImpl;
-import org.holoeverywhere.preference.PreferenceManager;
+import org.holoeverywhere.addon.IAddon;
+import org.holoeverywhere.addon.IAddonApplication;
+import org.holoeverywhere.addon.IAddonAttacher;
+import org.holoeverywhere.addon.IAddonBasicAttacher;
+import org.holoeverywhere.preference.PreferenceManagerHelper;
 import org.holoeverywhere.preference.SharedPreferences;
 
 import android.annotation.SuppressLint;
@@ -19,113 +26,57 @@ import android.os.Build.VERSION;
 import android.os.Bundle;
 
 public class Application extends android.app.Application implements
-        IHolo, SuperStartActivity, SuperSystemService {
-    public static final class Config extends Setting<Config> {
-        public static enum PreferenceImpl {
-            JSON, XML
-        }
-
-        private static final String HOLO_EVERYWHERE_PACKAGE = "org.holoeverywhere";
-
-        private static void onStateChange(Config config) {
-            String p = config.holoEverywherePackage.getValue();
-            if (p != null && p.length() > 0) {
-                config.widgetsPackage.setValue(p + ".widget");
-                config.preferencePackage.setValue(p + ".preference");
-                config.addonsPackage.setValue(p + ".addon");
-            }
-        }
-
-        private final SettingListener<Config> _DEFAULT_SETTINGS_LISTENER = new SettingListener<Config>() {
-            @Override
-            public void onAttach(Config config) {
-                onStateChange(config);
-            }
-
-            @Override
-            public void onDetach(Config config) {
-            }
-
-            @Override
-            public void onPropertyChange(Config config, Property<?> property) {
-                if (property == config.holoEverywherePackage) {
-                    onStateChange(config);
-                }
-            }
-
-        };
-        @SettingProperty(create = true)
-        public StringProperty addonsPackage;
-        @SettingProperty(create = true, defaultBoolean = false)
-        public BooleanProperty alwaysUseParentTheme;
-        @SettingProperty(create = true, defaultBoolean = false)
-        public BooleanProperty debugMode;
-        @SettingProperty(create = true)
-        public BooleanProperty disableContextMenu;
-        @SettingProperty(create = true, defaultBoolean = true)
-        public BooleanProperty disableOverscrollEffects;
-        @SettingProperty(create = true, defaultString = Config.HOLO_EVERYWHERE_PACKAGE)
-        public StringProperty holoEverywherePackage;
-        @SettingProperty(create = true, defaultBoolean = true)
-        public BooleanProperty namedPreferences;
-        @SettingProperty(create = true, defaultEnum = "XML", enumClass = PreferenceImpl.class)
-        public EnumProperty<PreferenceImpl> preferenceImpl;
-        @SettingProperty(create = true)
-        public StringProperty preferencePackage;
-        @SettingProperty(create = true)
-        public StringProperty widgetsPackage;
-
-        public Config attachDefaultListener() {
-            return addListener(_DEFAULT_SETTINGS_LISTENER);
-        }
-
-        public Config detachDefaultListener() {
-            return removeListener(_DEFAULT_SETTINGS_LISTENER);
-        }
-
-        @Override
-        protected void onInit() {
-            attachDefaultListener();
-        }
-    }
-
-    private static Application lastInstance;
-
+        IHolo, SuperStartActivity, SuperSystemService, IAddonAttacher<IAddonApplication> {
+    private static List<Class<? extends IAddon>> sInitialAddons;
+    private static Application sLastInstance;
     static {
         SystemServiceManager.register(LayoutInflaterCreator.class);
-        config().disableContextMenu.setValue(VERSION.SDK_INT >= 14);
-        config().disableOverscrollEffects.setValue(VERSION.SDK_INT <= 10);
     }
 
-    public static Config config() {
-        return Setting.get(Config.class);
+    public static void addInitialAddon(Class<? extends IAddon> clazz) {
+        if (sInitialAddons == null) {
+            sInitialAddons = new ArrayList<Class<? extends IAddon>>();
+        }
+        sInitialAddons.add(clazz);
     }
 
     public static Application getLastInstance() {
-        return Application.lastInstance;
+        return Application.sLastInstance;
     }
 
-    public static boolean isDebugMode() {
-        return Application.config().debugMode.getValue();
+    public static void init() {
     }
+
+    private final IAddonAttacher<IAddonApplication> mAttacher =
+            new IAddonBasicAttacher<IAddonApplication, Application>(this);
 
     public Application() {
-        Application.lastInstance = this;
+        Application.sLastInstance = this;
     }
 
     @Override
-    public Config getConfig() {
-        return config();
+    public <T extends IAddonApplication> T addon(Class<? extends IAddon> clazz) {
+        return mAttacher.addon(clazz);
+    }
+
+    @Override
+    public void addon(List<Class<? extends IAddon>> classes) {
+        mAttacher.addon(classes);
+    }
+
+    @Override
+    public <T extends IAddonApplication> T addon(String classname) {
+        return mAttacher.addon(classname);
     }
 
     @Override
     public SharedPreferences getDefaultSharedPreferences() {
-        return PreferenceManager.getDefaultSharedPreferences(this);
+        return PreferenceManagerHelper.getDefaultSharedPreferences(this);
     }
 
     @Override
     public SharedPreferences getDefaultSharedPreferences(PreferenceImpl impl) {
-        return PreferenceManager.getDefaultSharedPreferences(this, impl);
+        return PreferenceManagerHelper.getDefaultSharedPreferences(this, impl);
     }
 
     @Override
@@ -135,12 +86,12 @@ public class Application extends android.app.Application implements
 
     @Override
     public SharedPreferences getSharedPreferences(PreferenceImpl impl, String name, int mode) {
-        return PreferenceManager.wrap(this, impl, name, mode);
+        return PreferenceManagerHelper.wrap(this, impl, name, mode);
     }
 
     @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {
-        return PreferenceManager.wrap(this, name, mode);
+        return PreferenceManagerHelper.wrap(this, name, mode);
     }
 
     @Override
@@ -149,9 +100,47 @@ public class Application extends android.app.Application implements
     }
 
     @Override
-    public void onTerminate() {
-        LayoutInflater.clearInstances();
-        super.onTerminate();
+    public Object getSystemService(String name) {
+        return SystemServiceManager.getSystemService(this, name);
+    }
+
+    @Override
+    public boolean isAddonAttached(Class<? extends IAddon> clazz) {
+        return mAttacher.isAddonAttached(clazz);
+    }
+
+    @Override
+    public void lockAttaching() {
+        mAttacher.lockAttaching();
+    }
+
+    @Override
+    public List<Class<? extends IAddon>> obtainAddonsList() {
+        return mAttacher.obtainAddonsList();
+    }
+
+    @Override
+    public void onCreate() {
+        addon(sInitialAddons);
+        lockAttaching();
+        performAddonAction(new AddonCallback<IAddonApplication>() {
+            @Override
+            public void justAction(IAddonApplication addon) {
+                addon.onPreCreate();
+            }
+        });
+        super.onCreate();
+        performAddonAction(new AddonCallback<IAddonApplication>() {
+            @Override
+            public void justAction(IAddonApplication addon) {
+                addon.onCreate();
+            }
+        });
+    }
+
+    @Override
+    public boolean performAddonAction(AddonCallback<IAddonApplication> callback) {
+        return mAttacher.performAddonAction(callback);
     }
 
     @Override
@@ -176,7 +165,7 @@ public class Application extends android.app.Application implements
 
     @Override
     public void startActivity(Intent intent, Bundle options) {
-        if (config().alwaysUseParentTheme.getValue()) {
+        if (HoloEverywhere.ALWAYS_USE_PARENT_THEME) {
             ThemeManager.startActivity(this, intent, options);
         } else {
             superStartActivity(intent, -1, options);

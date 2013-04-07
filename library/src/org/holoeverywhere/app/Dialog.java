@@ -3,16 +3,17 @@ package org.holoeverywhere.app;
 
 import org.holoeverywhere.LayoutInflater;
 import org.holoeverywhere.R;
+import org.holoeverywhere.internal.WindowDecorView;
 
 import android.content.Context;
 import android.util.TypedValue;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 
 import com.actionbarsherlock.internal.view.menu.ContextMenuBuilder;
-import com.actionbarsherlock.internal.view.menu.ContextMenuDecorView;
 import com.actionbarsherlock.internal.view.menu.ContextMenuItemWrapper;
 import com.actionbarsherlock.internal.view.menu.ContextMenuListener;
 import com.actionbarsherlock.internal.view.menu.ContextMenuWrapper;
@@ -50,7 +51,7 @@ public class Dialog extends android.app.Dialog implements ContextMenuListener {
 
     @Override
     public void addContentView(View view, LayoutParams params) {
-        super.addContentView(prepareDecorView(view), params);
+        getWindow().addContentView(prepareDecorView(view, params), params);
     }
 
     @Override
@@ -111,7 +112,14 @@ public class Dialog extends android.app.Dialog implements ContextMenuListener {
     }
 
     public View prepareDecorView(View v) {
-        return ContextMenuDecorView.prepareDecorView(getContext(), v, this, 0);
+        return prepareDecorView(v, null);
+    }
+
+    public View prepareDecorView(View v, ViewGroup.LayoutParams params) {
+        if (v instanceof WindowDecorView) {
+            return v;
+        }
+        return new WindowDecorView(getContext(), v, params, this);
     }
 
     @Override
@@ -122,16 +130,17 @@ public class Dialog extends android.app.Dialog implements ContextMenuListener {
 
     @Override
     public void setContentView(int layoutResID) {
-        setContentView(getLayoutInflater().inflate(layoutResID));
+        setContentView(getLayoutInflater().makeDecorView(layoutResID, this));
     }
 
     @Override
     public void setContentView(View view) {
-        super.setContentView(prepareDecorView(view));
+        setContentView(view,
+                new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
     @Override
     public void setContentView(View view, LayoutParams params) {
-        super.setContentView(prepareDecorView(view), params);
+        getWindow().setContentView(prepareDecorView(view, params), params);
     }
 }
