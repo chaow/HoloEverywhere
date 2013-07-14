@@ -1,11 +1,10 @@
 
 package org.holoeverywhere.app;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.holoeverywhere.LayoutInflater;
 import org.holoeverywhere.addon.IAddon;
-import org.holoeverywhere.addon.IAddonAttacher;
 import org.holoeverywhere.addon.IAddonBasicAttacher;
 import org.holoeverywhere.addon.IAddonFragment;
 
@@ -37,11 +36,20 @@ public class Fragment extends _HoloFragment {
         }
     }
 
+    /**
+     * @deprecated Use {@link #instantiate(Class)} instead.
+     *             {@link #instantiate(Context, String)} is sucks, don't use it!
+     */
     @Deprecated
     public static Fragment instantiate(Context context, String fname) {
         return instantiate(context, fname, null);
     }
 
+    /**
+     * @deprecated Use {@link #instantiate(Class, Bundle)} instead.
+     *             {@link #instantiate(Context, String, Bundle)} is sucks, don't
+     *             use it!
+     */
     @SuppressWarnings("unchecked")
     @Deprecated
     public static Fragment instantiate(Context context, String fname, Bundle args) {
@@ -55,7 +63,7 @@ public class Fragment extends _HoloFragment {
         }
     }
 
-    private final IAddonAttacher<IAddonFragment> mAttacher =
+    private final IAddonBasicAttacher<IAddonFragment, Fragment> mAttacher =
             new IAddonBasicAttacher<IAddonFragment, Fragment>(this);
 
     private LayoutInflater mLayoutInflater;
@@ -66,7 +74,7 @@ public class Fragment extends _HoloFragment {
     }
 
     @Override
-    public void addon(List<Class<? extends IAddon>> classes) {
+    public void addon(Collection<Class<? extends IAddon>> classes) {
         mAttacher.addon(classes);
     }
 
@@ -95,14 +103,15 @@ public class Fragment extends _HoloFragment {
     }
 
     @Override
-    public List<Class<? extends IAddon>> obtainAddonsList() {
+    public Collection<Class<? extends IAddon>> obtainAddonsList() {
         return mAttacher.obtainAddonsList();
     }
 
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        addon(activity.obtainAddonsList());
+        mAttacher.reset();
+        mAttacher.inhert(activity);
     }
 
     @Override
@@ -123,20 +132,24 @@ public class Fragment extends _HoloFragment {
         });
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void onDetach() {
-        ((IAddonBasicAttacher<IAddonFragment, Fragment>) mAttacher).reset();
-        super.onDetach();
-    }
-
-    @Override
-    public void onViewCreated(final View view) {
-        super.onViewCreated(view);
+    public void onDestroyView() {
         performAddonAction(new AddonCallback<IAddonFragment>() {
             @Override
             public void justAction(IAddonFragment addon) {
-                addon.onViewCreated(view);
+                addon.onDestroyView();
+            }
+        });
+        super.onDestroyView();
+    }
+
+    @Override
+    public void onViewCreated(final View view, final Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        performAddonAction(new AddonCallback<IAddonFragment>() {
+            @Override
+            public void justAction(IAddonFragment addon) {
+                addon.onViewCreated(view, savedInstanceState);
             }
         });
     }

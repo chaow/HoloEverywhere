@@ -6,16 +6,13 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Collection;
 
-import org.holoeverywhere.FontLoader;
 import org.holoeverywhere.ThemeManager;
 import org.holoeverywhere.addon.AddonSherlock;
 import org.holoeverywhere.addon.AddonSherlock.AddonSherlockA;
 import org.holoeverywhere.addon.IAddon;
 import org.holoeverywhere.addon.IAddonActivity;
-import org.holoeverywhere.addon.IAddonAttacher;
 import org.holoeverywhere.addon.IAddonBasicAttacher;
 
 import android.content.Intent;
@@ -26,15 +23,11 @@ import android.os.Bundle;
 import android.support.v4.app._HoloActivity;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup.LayoutParams;
 
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.internal.view.menu.MenuItemWrapper;
 import com.actionbarsherlock.internal.view.menu.MenuWrapper;
 import com.actionbarsherlock.view.ActionMode;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
-import com.actionbarsherlock.view.MenuItem;
 
 public abstract class Activity extends _HoloActivity {
     @Retention(RetentionPolicy.RUNTIME)
@@ -44,28 +37,49 @@ public abstract class Activity extends _HoloActivity {
         public String[] value();
     }
 
+    private final class FindViewAction extends AddonCallback<IAddonActivity> {
+        private int mId;
+        private View mView;
+
+        @Override
+        public boolean action(IAddonActivity addon) {
+            return (mView = addon.findViewById(mId)) != null;
+        }
+
+        @Override
+        public boolean post() {
+            return (mView = getWindow().findViewById(mId)) != null;
+        }
+    }
+
+    private final class KeyEventAction extends AddonCallback<IAddonActivity> {
+        private KeyEvent mEvent;
+
+        @Override
+        public boolean action(IAddonActivity addon) {
+            return addon.dispatchKeyEvent(mEvent);
+        }
+
+        @Override
+        public boolean post() {
+            return Activity.super.dispatchKeyEvent(mEvent);
+        }
+    }
+
     public static final String ADDON_ROBOGUICE = "Roboguice";
     public static final String ADDON_SHERLOCK = "Sherlock";
-    public static final String ADDON_SLIDING_MENU = "SlidingMenu";
-    private final IAddonAttacher<IAddonActivity> mAttacher =
+    public static final String ADDON_SLIDER = "Slider";
+    /**
+     * Use {@link #ADDON_SLIDER} instead
+     */
+    @Deprecated
+    public static final String ADDON_SLIDING_MENU = ADDON_SLIDER;
+    public static final String ADDON_TABBER = "Tabber";
+    private final IAddonBasicAttacher<IAddonActivity, Activity> mAttacher =
             new IAddonBasicAttacher<IAddonActivity, Activity>(this);
-    private MenuInflater mMenuInflater;
-
-    @Override
-    public void addContentView(View sView, final LayoutParams params) {
-        final View view = prepareDecorView(sView, params);
-        performAddonAction(new AddonCallback<IAddonActivity>() {
-            @Override
-            public boolean action(IAddonActivity addon) {
-                return addon.addContentView(view, params);
-            }
-
-            @Override
-            public void justPost() {
-                getWindow().addContentView(view, params);
-            }
-        });
-    }
+    private boolean mCreatedByThemeManager = false;
+    private final FindViewAction mFindViewAction = new FindViewAction();
+    private final KeyEventAction mKeyEventAction = new KeyEventAction();
 
     @Override
     public <T extends IAddonActivity> T addon(Class<? extends IAddon> clazz) {
@@ -73,7 +87,7 @@ public abstract class Activity extends _HoloActivity {
     }
 
     @Override
-    public void addon(List<Class<? extends IAddon>> classes) {
+    public void addon(Collection<Class<? extends IAddon>> classes) {
         mAttacher.addon(classes);
     }
 
@@ -102,54 +116,22 @@ public abstract class Activity extends _HoloActivity {
     }
 
     @Override
-    public boolean dispatchKeyEvent(final KeyEvent event) {
-        return performAddonAction(new AddonCallback<IAddonActivity>() {
-            @Override
-            public boolean action(IAddonActivity addon) {
-                return addon.dispatchKeyEvent(event);
-            }
-
-            @Override
-            public boolean post() {
-                return Activity.super.dispatchKeyEvent(event);
-            }
-        });
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        mKeyEventAction.mEvent = event;
+        return performAddonAction(mKeyEventAction);
     }
 
     @Override
-    public View findViewById(final int id) {
-        View view = super.findViewById(id);
-        if (view != null) {
-            return view;
-        }
-        final AtomicReference<View> ref = new AtomicReference<View>();
-        performAddonAction(new AddonCallback<IAddonActivity>() {
-            @Override
-            public boolean action(IAddonActivity addon) {
-                View view = addon.findViewById(id);
-                if (view != null) {
-                    ref.set(view);
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        });
-        return ref.get();
+    public View findViewById(int id) {
+        mFindViewAction.mView = null;
+        mFindViewAction.mId = id;
+        performAddonAction(mFindViewAction);
+        return mFindViewAction.mView;
     }
 
     @Override
     public ActionBar getSupportActionBar() {
         return addonSherlock().getActionBar();
-    }
-
-    @Override
-    public MenuInflater getSupportMenuInflater() {
-        if (mMenuInflater != null) {
-            return mMenuInflater;
-        }
-        mMenuInflater = new MenuInflater(getSupportActionBarContext(), this);
-        return mMenuInflater;
     }
 
     public Bundle instanceState(Bundle savedInstanceState) {
@@ -168,13 +150,17 @@ public abstract class Activity extends _HoloActivity {
         return mAttacher.isAddonAttached(clazz);
     }
 
+    public boolean isCreatedByThemeManager() {
+        return mCreatedByThemeManager;
+    }
+
     @Override
     public void lockAttaching() {
         mAttacher.lockAttaching();
     }
 
     @Override
-    public List<Class<? extends IAddon>> obtainAddonsList() {
+    public Collection<Class<? extends IAddon>> obtainAddonsList() {
         return mAttacher.obtainAddonsList();
     }
 
@@ -221,20 +207,23 @@ public abstract class Activity extends _HoloActivity {
     }
 
     @Override
-    protected void onCreate(Bundle sSavedInstanceState) {
-        final Bundle savedInstanceState = instanceState(sSavedInstanceState);
-        forceInit(savedInstanceState);
+    protected void onCreate(Bundle savedInstanceState) {
+        final Bundle state = instanceState(savedInstanceState);
+        mCreatedByThemeManager = getIntent().getBooleanExtra(
+                ThemeManager.KEY_CREATED_BY_THEME_MANAGER, false);
+        mAttacher.inhert(getSupportApplication());
+        forceInit(state);
         performAddonAction(new AddonCallback<IAddonActivity>() {
             @Override
             public void justAction(IAddonActivity addon) {
-                addon.onPreCreate(savedInstanceState);
+                addon.onPreCreate(state);
             }
         });
-        super.onCreate(savedInstanceState);
+        super.onCreate(state);
         performAddonAction(new AddonCallback<IAddonActivity>() {
             @Override
             public void justAction(IAddonActivity addon) {
-                addon.onCreate(savedInstanceState);
+                addon.onCreate(state);
             }
         });
     }
@@ -242,11 +231,6 @@ public abstract class Activity extends _HoloActivity {
     @Override
     public final boolean onCreateOptionsMenu(android.view.Menu menu) {
         return onCreateOptionsMenu(new MenuWrapper(menu));
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        return true;
     }
 
     @Override
@@ -276,16 +260,16 @@ public abstract class Activity extends _HoloActivity {
     }
 
     @Override
-    public boolean onKeyUp(final int keyCode, final KeyEvent event) {
+    public boolean onHomePressed() {
         return performAddonAction(new AddonCallback<IAddonActivity>() {
             @Override
             public boolean action(IAddonActivity addon) {
-                return addon.onKeyUp(keyCode, event);
+                return addon.onHomePressed();
             }
 
             @Override
             public boolean post() {
-                return Activity.super.onKeyUp(keyCode, event);
+                return Activity.super.onHomePressed();
             }
         });
     }
@@ -338,11 +322,6 @@ public abstract class Activity extends _HoloActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        return false;
-    }
-
-    @Override
     public void onPanelClosed(final int featureId, final android.view.Menu menu) {
         performAddonAction(new AddonCallback<IAddonActivity>() {
             @Override
@@ -374,7 +353,6 @@ public abstract class Activity extends _HoloActivity {
             }
         });
         super.onPostCreate(savedInstanceState);
-        FontLoader.applyDefaultStyles(getWindow().getDecorView());
     }
 
     @Override
@@ -399,10 +377,12 @@ public abstract class Activity extends _HoloActivity {
             for (String addon : getClass().getAnnotation(Addons.class).value()) {
                 if (ADDON_SHERLOCK.equals(addon)) {
                     config.requireSherlock = true;
-                } else if (ADDON_SLIDING_MENU.equals(addon)) {
-                    config.requireSlidingMenu = true;
+                } else if (ADDON_SLIDER.equals(addon)) {
+                    config.requireSlider = true;
                 } else if (ADDON_ROBOGUICE.equals(addon)) {
                     config.requireRoboguice = true;
+                } else if (ADDON_TABBER.equals(addon)) {
+                    config.requireTabber = true;
                 } else {
                     addon(addon);
                 }
@@ -413,11 +393,6 @@ public abstract class Activity extends _HoloActivity {
     @Override
     public final boolean onPrepareOptionsMenu(android.view.Menu menu) {
         return onPrepareOptionsMenu(new MenuWrapper(menu));
-    }
-
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        return true;
     }
 
     @Override
@@ -524,10 +499,7 @@ public abstract class Activity extends _HoloActivity {
 
     @Override
     public void requestWindowFeature(long featureIdLong) {
-        if (!super.isInited()) {
-            super.requestWindowFeature(featureIdLong);
-            return;
-        }
+        super.requestWindowFeature(featureIdLong);
         final int featureId = (int) featureIdLong;
         performAddonAction(new AddonCallback<IAddonActivity>() {
             @Override
@@ -546,32 +518,6 @@ public abstract class Activity extends _HoloActivity {
         Bundle bundle = new Bundle(getClassLoader());
         onSaveInstanceState(bundle);
         return bundle.size() > 0 ? bundle : null;
-    }
-
-    @Override
-    public void setContentView(int layoutResId) {
-        setContentView(getLayoutInflater().makeDecorView(layoutResId, this));
-    }
-
-    @Override
-    public void setContentView(View view) {
-        setContentView(view, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-    }
-
-    @Override
-    public void setContentView(View sView, final LayoutParams params) {
-        final View view = prepareDecorView(sView, params);
-        performAddonAction(new AddonCallback<IAddonActivity>() {
-            @Override
-            public boolean action(IAddonActivity addon) {
-                return addon.setContentView(view, params);
-            }
-
-            @Override
-            public void justPost() {
-                getWindow().setContentView(view, params);
-            }
-        });
     }
 
     @Override
@@ -597,12 +543,6 @@ public abstract class Activity extends _HoloActivity {
     @Override
     public void setSupportSecondaryProgress(int secondaryProgress) {
         addonSherlock().setSecondaryProgress(secondaryProgress);
-    }
-
-    @Override
-    public void setTheme(int resid) {
-        mMenuInflater = null;
-        super.setTheme(resid);
     }
 
     public void setUiOptions(int uiOptions) {

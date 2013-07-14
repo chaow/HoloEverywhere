@@ -1,87 +1,55 @@
 ![HoloEverywhere](http://holoeverywhere.org/github-res/logo.png "HoloEverywhere")
 
+[![Build Status](https://travis-ci.org/Prototik/HoloEverywhere.png?branch=master)](https://travis-ci.org/Prototik/HoloEverywhere)
+
 ## What is it?
 Bringing Holo Theme from Android 4.1 to 2.1 and above.
 ## Links
-[![Play Store](http://holoeverywhere.org/github-res/play_store_button.png)][Play Store]  
+[![Demo APK](http://holoeverywhere.org/github-res/demo_button.png)][Demo APK]  
 [![Donate](http://holoeverywhere.org/github-res/donate_button.png)][Donate]
-## How to use? ([Maven][Build with Maven])
 
-* You should clone git repo, init and update submodules:
-
-```
-git clone --branch stable git://github.com/ChristopheVersieux/HoloEverywhere.git HoloEverywhere
-cd HoloEverywhere
-git submodule update --init --recursive
-```
-Git will be swear on detached HEAD state, ignore it.
-
-You also may use git GUI programs
-
-* Import HoloEverywhere from `library` folder and ActionBarSherlock from `contrib/ActionBarSherlock/library` folder into Eclipse
-
-* Add HoloEverywhere project as library into your project (Properties/Android/Library/Add)
-
-* Extend the Activities from `org.holoeverywhere.app.***Activity`
-
-Example:
-
-```
-import org.holoeverywhere.app.ListActivity;
-
-public class MainActivity extends ListActivity { ...
-```
-Also you should cast view to with the same name from package `org.holoeverywhere.widget`, if possible. This, for example, ProgressBar and Spinner:
-```
-import org.holoeverywhere.widget.ProgressBar;
-
-ProgressBar bar = (ProgressBar) findViewById(R.id.progress_bar);
-```
+## How to use?
+### [Eclipse](https://github.com/Prototik/HoloEverywhere/wiki/Import-in-IDE#eclipse)
+### [IntelliJ IDEA](https://github.com/Prototik/HoloEverywhere/wiki/Import-in-IDE#intellij-idea)
+### [Maven](https://github.com/Prototik/HoloEverywhere/wiki/Import-in-IDE#maven)
 
 ## Screenshots
-![Screenshot 1](http://holoeverywhere.org/img/screenshots/1.png "Screenshot 1")
-![Screenshot 2](http://holoeverywhere.org/img/screenshots/2.png "Screenshot 2")
-![Screenshot 3](http://holoeverywhere.org/img/screenshots/3.png "Screenshot 3")
-![Screenshot 4](http://holoeverywhere.org/img/screenshots/4.png "Screenshot 4")
-![Screenshot 5](http://holoeverywhere.org/img/screenshots/5.png "Screenshot 5")
-![Screenshot 6](http://holoeverywhere.org/img/screenshots/6.png "Screenshot 6")
-![Screenshot 7](http://holoeverywhere.org/img/screenshots/7.png "Screenshot 7")
-![Screenshot 8](http://holoeverywhere.org/img/screenshots/8.png "Screenshot 8")
-![Screenshot 9](http://holoeverywhere.org/img/screenshots/9.png "Screenshot 9")
-![Screenshot 10](http://holoeverywhere.org/img/screenshots/10.png "Screenshot 10")
+![Screenshot 1](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/1.png "Screenshot 1")
+![Screenshot 2](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/2.png "Screenshot 2")
+![Screenshot 3](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/3.png "Screenshot 3")
+![Screenshot 4](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/4.png "Screenshot 4")
+![Screenshot 5](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/5.png "Screenshot 5")
+![Screenshot 6](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/6.png "Screenshot 6")
+![Screenshot 7](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/7.png "Screenshot 7")
+![Screenshot 8](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/8.png "Screenshot 8")
+![Screenshot 9](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/9.png "Screenshot 9")
+![Screenshot 10](https://github.com/Prototik/HoloEverywhere/raw/gh-pages/img/screenshots/10.png "Screenshot 10")
+
+## Featured implementations
+ * [Project Euler](https://play.google.com/store/apps/details?id=ie.cathalcoffey.android.projecteuler)
+ * [TimeAct To-Do](https://play.google.com/store/apps/details?id=timeact.app.task.manager)
+ * [UnixAdmin](https://play.google.com/store/apps/details?id=org.kidinov.unixadmin)
+ * [Meditation Assistant](https://play.google.com/store/apps/details?id=sh.ftp.rocketninelabs.meditationassistant)
+ * [Ragnabase MVP](https://play.google.com/store/apps/details?id=com.ragnabase.mvp)
+ * [noodles - To Do List](https://play.google.com/store/apps/details?id=com.makeramen.noodles)
+ * [otoMoto](https://play.google.com/store/apps/details?id=pl.otomoto)
+ 
+Write to [Sergey](mailto:prototypegamez@gmail.com) for add your application to this list.
 
 ## Contact
-[Christophe](https://plus.google.com/108315424589085456181/posts "Google Plus")
 
-[Sergey](mailto:prototypegamez@gmail.com "Send email to Sergey")
+Sergey:
+  * [Email](mailto:prototypegamez@gmail.com "Send email to Sergey")
+  * [Google Plus](https://plus.google.com/103272077758668000975/posts "Google Plus")
+  * [Habrahabr](http://habrahabr.ru/users/prototik/)
+  
+Christophe:
+  * [Google Plus](https://plus.google.com/108315424589085456181/posts "Google Plus")
 
-### Notice for developers
-If you make changes in styles.xml - use the [resbuilder](https://github.com/ChristopheVersieux/HoloEverywhere/tree/master/resbuilder), otherwise pull request will not be accepted.
-And before commiting your changes check HEAD - it should be reference on master branch.
-```
-$ git branch
-* master
-```
-If you see it:
-```
-$ git branch
-* (no branch)
-  master
-```
-Your HEAD in detached state. Stash your changes, switch branch and apply stash:
-```
-git stash
-git checkout master
-git stash apply
-```
+## License
+MIT License, full text of license see [here][License]
 
-### Demo notice
-In demo using music "Winter Dawn" by machinimasound.com. Licensed under Creative Commons "Attribution 3.0"
-
-### License
-LGPLv3, full text of license see [here][License]
-
-[Play Store]: https://play.google.com/store/apps/details?id=org.holoeverywhere.demo "Play Store"
+[Demo APK]: https://oss.sonatype.org/content/repositories/releases/org/holoeverywhere/demo/1.6.8/demo-1.6.8-aligned.apk "Demo APK"
 [Donate]: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=X7E7U7HNR36YN&lc=US&item_name=HoloEverywhere&currency_code=USD&bn=PP%2dDonationsBF%3adonate_button%2epng%3aNonHosted "Donate"
-[Build with Maven]: https://github.com/ChristopheVersieux/HoloEverywhere/wiki/Maven "Build with maven"
-[License]: https://raw.github.com/ChristopheVersieux/HoloEverywhere/master/LICENSE "LGPLv3"
+[Build with Maven]: https://github.com/Prototik/HoloEverywhere/wiki/Maven "Build with maven"
+[License]: https://raw.github.com/Prototik/HoloEverywhere/master/LICENSE "LGPLv3"

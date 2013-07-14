@@ -33,23 +33,28 @@ public class MenusFragments extends OtherFragment {
         };
 
         private SparseBooleanArray mCheckboxsState = new SparseBooleanArray(CHECKBOXS.length);
+        private MenusFragments mFragment;
         private final OnMenuItemClickListener mOnMenuItemClickListener = new OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {
+                boolean result = false;
                 final int id = menuItem.getItemId();
                 for (int i : RADIOS) {
                     if (i == id) {
                         mRadioState = id;
-                        return true;
+                        result = true;
                     }
                 }
                 for (int i : CHECKBOXS) {
                     if (i == id) {
                         mCheckboxsState.put(id, !mCheckboxsState.get(id, false));
-                        return true;
+                        result = true;
                     }
                 }
-                return false;
+                if (result && mFragment != null) {
+                    mFragment.getSupportActivity().supportInvalidateOptionsMenu();
+                }
+                return result;
             }
         };
         private int mRadioState = RADIOS[0];
@@ -79,6 +84,10 @@ public class MenusFragments extends OtherFragment {
             }
         }
 
+        public void setFragment(MenusFragments fragment) {
+            mFragment = fragment;
+        }
+
         @Override
         public void writeToParcel(Parcel dest, int flags) {
             dest.writeSparseBooleanArray(mCheckboxsState);
@@ -93,7 +102,16 @@ public class MenusFragments extends OtherFragment {
     private static final int[] RADIOS = {
             R.id.item1, R.id.item2
     };
-    private boolean mAllowCreateContextMenu = false;
+    private OnOtherItemClickListener mContextMenuListener = new OnOtherItemClickListener() {
+        @Override
+        public void onClick(OtherItem otherItem) {
+            final View view = otherItem.lastView;
+            registerForContextMenu(view);
+            openContextMenu(view);
+            unregisterForContextMenu(view);
+        }
+    };
+
     private MenuHelper mDemoMenuHelper;
 
     @Override
@@ -104,20 +122,24 @@ public class MenusFragments extends OtherFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (savedInstanceState == null) {
-            mDemoMenuHelper = new MenuHelper();
-        } else {
+        if (savedInstanceState != null) {
             mDemoMenuHelper = savedInstanceState.getParcelable(KEY_MENU_STATE);
         }
+        if (mDemoMenuHelper == null) {
+            mDemoMenuHelper = new MenuHelper();
+        }
+        mDemoMenuHelper.setFragment(this);
+        setHasOptionsMenu(true);
     }
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-        if (mAllowCreateContextMenu) {
-            mDemoMenuHelper.makeMenu(menu, getMenuInflater());
-        } else {
-            super.onCreateContextMenu(menu, v, menuInfo);
-        }
+        mDemoMenuHelper.makeMenu(menu, getMenuInflater());
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        mDemoMenuHelper.makeMenu(menu, inflater);
     }
 
     @Override
@@ -130,17 +152,8 @@ public class MenusFragments extends OtherFragment {
                 menu.show();
             }
         });
-        addItemWithLongClick("ContextMenu (press and hold)", new OnOtherItemClickListener() {
-            @Override
-            public void onClick(OtherItem otherItem) {
-                final View view = otherItem.lastView;
-                mAllowCreateContextMenu = true;
-                registerForContextMenu(view);
-                openContextMenu(view);
-                unregisterForContextMenu(view);
-                mAllowCreateContextMenu = false;
-            }
-        });
+        addItem("ContextMenu", mContextMenuListener);
+        addItemWithLongClick("ContextMenu (long click)", mContextMenuListener);
     }
 
     @Override

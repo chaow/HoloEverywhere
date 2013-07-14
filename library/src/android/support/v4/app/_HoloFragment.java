@@ -1,62 +1,70 @@
 
 package android.support.v4.app;
 
+import org.holoeverywhere.HoloEverywhere;
 import org.holoeverywhere.HoloEverywhere.PreferenceImpl;
-import org.holoeverywhere.IHoloFragment;
 import org.holoeverywhere.LayoutInflater;
+import org.holoeverywhere.addon.IAddonAttacher;
+import org.holoeverywhere.addon.IAddonFragment;
 import org.holoeverywhere.app.Activity;
 import org.holoeverywhere.app.Application;
 import org.holoeverywhere.preference.SharedPreferences;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.v4.app.Watson.OnCreateOptionsMenuListener;
+import android.support.v4.app.Watson.OnOptionsItemSelectedListener;
+import android.support.v4.app.Watson.OnPrepareOptionsMenuListener;
 import android.util.AttributeSet;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.internal.view.menu.ContextMenuBuilder;
 import com.actionbarsherlock.internal.view.menu.ContextMenuDecorView;
+import com.actionbarsherlock.internal.view.menu.ContextMenuDecorView.ContextMenuListenersProvider;
 import com.actionbarsherlock.internal.view.menu.ContextMenuItemWrapper;
 import com.actionbarsherlock.internal.view.menu.ContextMenuListener;
 import com.actionbarsherlock.internal.view.menu.ContextMenuWrapper;
 import com.actionbarsherlock.internal.view.menu.MenuItemWrapper;
 import com.actionbarsherlock.internal.view.menu.MenuWrapper;
+import com.actionbarsherlock.view.ActionMode;
 import com.actionbarsherlock.view.ContextMenu;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 
 public abstract class _HoloFragment extends android.support.v4.app.Fragment implements
-        IHoloFragment {
-    private static final int INTERNAL_DECOR_VIEW_ID = 0x7f999999;
+        OnPrepareOptionsMenuListener,
+        OnCreateOptionsMenuListener, OnOptionsItemSelectedListener, ContextMenuListener,
+        ContextMenuListenersProvider, IAddonAttacher<IAddonFragment> {
     private Activity mActivity;
-    private boolean mDestoryChildFragments = true;
+    boolean mDetachChildFragments = true;
 
-    private Bundle mSavedInstanceState;
-
-    @Override
-    public void createContextMenu(ContextMenuBuilder contextMenuBuilder,
-            View view, ContextMenuInfo menuInfo, ContextMenuListener listener) {
-        mActivity.createContextMenu(contextMenuBuilder, view, menuInfo, listener);
+    private void fixClassloader(Bundle savedInstanceState) {
+        if (savedInstanceState == null) {
+            return;
+        }
+        savedInstanceState.setClassLoader(HoloEverywhere.class.getClassLoader());
     }
 
-    protected int getContainerId() {
+    public final int getContainerId() {
         return mContainerId;
     }
 
     @Override
+    public ContextMenuListener getContextMenuListener(View view) {
+        return mActivity.getContextMenuListener(view);
+    }
+
     public SharedPreferences getDefaultSharedPreferences() {
         return mActivity.getDefaultSharedPreferences();
     }
 
-    @Override
     public SharedPreferences getDefaultSharedPreferences(PreferenceImpl impl) {
         return mActivity.getDefaultSharedPreferences(impl);
     }
 
-    @Override
     public abstract LayoutInflater getLayoutInflater();
 
     @Override
@@ -72,22 +80,15 @@ public abstract class _HoloFragment extends android.support.v4.app.Fragment impl
         return mActivity.getSupportMenuInflater();
     }
 
-    protected Bundle getSavedInstanceState() {
-        return mSavedInstanceState;
-    }
-
-    @Override
     public SharedPreferences getSharedPreferences(PreferenceImpl impl,
             String name, int mode) {
         return mActivity.getSharedPreferences(impl, name, mode);
     }
 
-    @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {
         return mActivity.getSharedPreferences(name, mode);
     }
 
-    @Override
     public ActionBar getSupportActionBar() {
         return mActivity.getSupportActionBar();
     }
@@ -96,31 +97,20 @@ public abstract class _HoloFragment extends android.support.v4.app.Fragment impl
         return mActivity.getSupportActionBarContext();
     }
 
-    @Override
     public Activity getSupportActivity() {
         return mActivity;
     }
 
-    @Override
     public Application getSupportApplication() {
         return mActivity.getSupportApplication();
-    }
-
-    @Override
-    public FragmentManager getSupportFragmentManager() {
-        if (mActivity != null) {
-            return mActivity.getSupportFragmentManager();
-        } else {
-            return getFragmentManager();
-        }
     }
 
     public Object getSystemService(String name) {
         return mActivity.getSystemService(name);
     }
 
-    public boolean isDestoryChildFragments() {
-        return mDestoryChildFragments;
+    public boolean isDetachChildFragments() {
+        return mDetachChildFragments;
     }
 
     public void onAttach(Activity activity) {
@@ -167,8 +157,7 @@ public abstract class _HoloFragment extends android.support.v4.app.Fragment impl
     @Override
     public final void onCreateOptionsMenu(android.view.Menu menu,
             android.view.MenuInflater inflater) {
-        onCreateOptionsMenu(new MenuWrapper(menu),
-                mActivity.getSupportMenuInflater());
+        onCreateOptionsMenu(new MenuWrapper(menu), getMenuInflater());
     }
 
     @Override
@@ -179,11 +168,16 @@ public abstract class _HoloFragment extends android.support.v4.app.Fragment impl
     @Override
     public final View onCreateView(android.view.LayoutInflater inflater,
             ViewGroup container, Bundle savedInstanceState) {
-        return prepareDecorView(onCreateView(getLayoutInflater(),
-                container, savedInstanceState));
+        ContextMenuDecorView decorView = new ContextMenuDecorView(mActivity);
+        decorView.setProvider(this);
+        final View view = onCreateView(getLayoutInflater(), decorView, savedInstanceState);
+        if (view == null) {
+            return null;
+        }
+        decorView.addView(view);
+        return decorView;
     }
 
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         return super.onCreateView(inflater, container, savedInstanceState);
@@ -192,17 +186,17 @@ public abstract class _HoloFragment extends android.support.v4.app.Fragment impl
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (mChildFragmentManager != null && mDestoryChildFragments) {
-            synchronized (mChildFragmentManager) {
-                for (Fragment fragment : mChildFragmentManager.mActive) {
-                    mChildFragmentManager.removeFragment(fragment, 0, 0);
+        if (mChildFragmentManager != null && mChildFragmentManager.mActive != null
+                && mDetachChildFragments) {
+            for (Fragment fragment : mChildFragmentManager.mActive) {
+                if (fragment == null || !fragment.mFromLayout) {
+                    continue;
                 }
+                mChildFragmentManager.detachFragment(fragment, 0, 0);
             }
-            mChildFragmentManager = null;
         }
     }
 
-    @Override
     public void onInflate(Activity activity, AttributeSet attrs,
             Bundle savedInstanceState) {
         super.onInflate(activity, attrs, savedInstanceState);
@@ -233,17 +227,17 @@ public abstract class _HoloFragment extends android.support.v4.app.Fragment impl
     public void onPrepareOptionsMenu(Menu menu) {
     }
 
+    /**
+     * Use {@link #onViewCreated(View, Bundle)} instead
+     */
+    @Deprecated
     public void onViewCreated(View view) {
-        super.onViewCreated(view, mSavedInstanceState);
+
     }
 
     @Override
-    public final void onViewCreated(View view, Bundle savedInstanceState) {
-        View v = view.findViewById(INTERNAL_DECOR_VIEW_ID);
-        if (v != null && v instanceof ContextMenuDecorView) {
-            view = ((ContextMenuDecorView) v).unwrap();
-        }
-        mSavedInstanceState = savedInstanceState;
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         onViewCreated(view);
     }
 
@@ -252,19 +246,52 @@ public abstract class _HoloFragment extends android.support.v4.app.Fragment impl
     }
 
     @Override
-    public View prepareDecorView(View v) {
-        if (v == null) {
-            return v;
+    void performActivityCreated(Bundle savedInstanceState) {
+        fixClassloader(savedInstanceState);
+        super.performActivityCreated(savedInstanceState);
+    }
+
+    @Override
+    public void registerForContextMenu(View view) {
+        if (HoloEverywhere.WRAP_TO_NATIVE_CONTEXT_MENU) {
+            super.registerForContextMenu(view);
+        } else {
+            mActivity.registerForContextMenu(view, this);
         }
-        ContextMenuDecorView view = new ContextMenuDecorView(mActivity, v, null, this);
-        view.setId(INTERNAL_DECOR_VIEW_ID);
-        return view;
     }
 
     /**
-     * If true fragment will be destory all child fragments after destory view
+     * If true this fragment will be detach all inflated child fragments after
+     * destory view
      */
-    public void setDestoryChildFragments(boolean destoryChildFragments) {
-        mDestoryChildFragments = destoryChildFragments;
+    public void setDetachChildFragments(boolean detachChildFragments) {
+        mDetachChildFragments = detachChildFragments;
+    }
+
+    @Override
+    public void setInitialSavedState(SavedState state) {
+        if (state != null) {
+            fixClassloader(state.mState);
+        }
+        super.setInitialSavedState(state);
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        if (isVisibleToUser) {
+            fixClassloader(mSavedFragmentState);
+        }
+        super.setUserVisibleHint(isVisibleToUser);
+    }
+
+    public abstract ActionMode startActionMode(ActionMode.Callback callback);
+
+    @Override
+    public void unregisterForContextMenu(View view) {
+        if (HoloEverywhere.WRAP_TO_NATIVE_CONTEXT_MENU) {
+            super.unregisterForContextMenu(view);
+        } else {
+            mActivity.unregisterForContextMenu(view);
+        }
     }
 }
