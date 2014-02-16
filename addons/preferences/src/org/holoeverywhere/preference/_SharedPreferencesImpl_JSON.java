@@ -1,6 +1,16 @@
 
 package org.holoeverywhere.preference;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.os.Build.VERSION;
+import android.util.Log;
+
+import org.holoeverywhere.HoloEverywhere;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,16 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.holoeverywhere.HoloEverywhere;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.os.Build.VERSION;
-import android.util.Log;
-
 public class _SharedPreferencesImpl_JSON extends _SharedPreferencesBase {
     private class ClearJSONManipulate implements FutureJSONManipulate {
         @Override
@@ -39,7 +39,7 @@ public class _SharedPreferencesImpl_JSON extends _SharedPreferencesBase {
             Iterator<String> iterator = object.keys();
             while (iterator.hasNext()) {
                 final String key = iterator.next();
-                object.remove(key);
+                iterator.remove();
                 notifyOnChange(key);
             }
             return true;
@@ -201,13 +201,9 @@ public class _SharedPreferencesImpl_JSON extends _SharedPreferencesBase {
 
         @Override
         public boolean onJSONManipulate(JSONObject object) {
-            if (object.has(key)) {
-                object.remove(key);
-                notifyOnChange(key);
-                return true;
-            } else {
-                return false;
-            }
+            object.remove(key);
+            notifyOnChange(key);
+            return true;
         }
     }
 

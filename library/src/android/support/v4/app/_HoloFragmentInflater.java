@@ -1,19 +1,50 @@
 
 package android.support.v4.app;
 
-import org.holoeverywhere.LayoutInflater;
-
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.TypedArray;
 import android.support.v4.app.FragmentActivity.FragmentTag;
+import android.support.v7.internal.view.menu.ContextMenuDecorView;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 
+import org.holoeverywhere.LayoutInflater;
+import org.holoeverywhere.widget.FrameLayout;
+
 public class _HoloFragmentInflater {
+    static {
+        NoSaveStateFrameLayout.sNoSaveStateFrameLayoutCreator = new NoSaveStateFrameLayout.NoSaveStateFrameLayoutCreator() {
+            @Override
+            public ViewGroup create(Fragment fragment, View view) {
+                final FrameLayout wrapper;
+                if (fragment instanceof _HoloFragment) {
+					wrapper = new ContextMenuDecorView(view.getContext());
+					((ContextMenuDecorView) wrapper).setProvider((_HoloFragment) fragment);
+				} else {
+					wrapper = new FrameLayout(view.getContext());
+				}
+                wrapper.setSaveChildrenState(false);
+                ViewGroup.LayoutParams childParams = view.getLayoutParams();
+                if (childParams != null) {
+                    wrapper.setLayoutParams(childParams);
+                }
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+                view.setLayoutParams(lp);
+                wrapper.addView(view);
+                return wrapper;
+            }
+        };
+    }
+    
+    public static void init() {
+		
+	}
+
     private static View inflate(AttributeSet attrs, View parent, FragmentActivity activity,
-            Fragment parentFragment) {
+                                Fragment parentFragment) {
         String fname = attrs.getAttributeValue(null, "class");
         TypedArray a = activity.obtainStyledAttributes(attrs, FragmentTag.Fragment);
         if (fname == null) {
@@ -25,7 +56,7 @@ public class _HoloFragmentInflater {
         int id = a.getResourceId(FragmentTag.Fragment_id, View.NO_ID);
         String tag = a.getString(FragmentTag.Fragment_tag);
         a.recycle();
-        int containerId = parent != null ? parent.getId() : 0;
+        int containerId = parent != null ? parent.getId() : View.NO_ID;
         if (containerId == View.NO_ID && id == View.NO_ID && tag == null) {
             throw new IllegalArgumentException(
                     attrs.getPositionDescription()
@@ -79,7 +110,7 @@ public class _HoloFragmentInflater {
     }
 
     public static View inflate(LayoutInflater layoutInflater, AttributeSet attrs, View parent,
-            Fragment fragment) {
+                               Fragment fragment) {
         FragmentActivity activity = layoutInflater.getFragmentActivity();
         if (activity != null) {
             return inflate(attrs, parent, activity, fragment);
@@ -99,16 +130,12 @@ public class _HoloFragmentInflater {
     }
 
     private static FragmentManagerImpl obtainFragmentManager(FragmentActivity activity,
-            Fragment fragment) {
+                                                             Fragment fragment) {
         FragmentManagerImpl fm = null;
         if (fragment != null) {
             fm = fragment.mChildFragmentManager;
             if (fm == null) {
-                try {
-                    fm = (FragmentManagerImpl) fragment.getChildFragmentManager();
-                } catch (ClassCastException e) {
-                    fm = fragment.mChildFragmentManager;
-                }
+                fm = (FragmentManagerImpl) fragment.getChildFragmentManager();
             }
         }
         if (fm == null && activity != null) {

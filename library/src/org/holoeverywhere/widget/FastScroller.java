@@ -1,9 +1,6 @@
 
 package org.holoeverywhere.widget;
 
-import org.holoeverywhere.R;
-import org.holoeverywhere.widget.FastScroller.FastScrollerCallback;
-
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
@@ -25,6 +22,9 @@ import android.widget.ExpandableListAdapter;
 import android.widget.ListAdapter;
 import android.widget.SectionIndexer;
 import android.widget.WrapperListAdapter;
+
+import org.holoeverywhere.R;
+import org.holoeverywhere.widget.FastScroller.FastScrollerCallback;
 
 class FastScroller<T extends AbsListView & FastScrollerCallback> {
     public static interface FastScrollerCallback {
@@ -83,7 +83,7 @@ class FastScroller<T extends AbsListView & FastScrollerCallback> {
     private static final int OVERLAY_AT_THUMB = 1;
     private static final int OVERLAY_FLOATING = 0;
     private static final int PENDING_DRAG_DELAY = 180;
-    private static final int[] PRESSED_STATES = new int[] {
+    private static final int[] PRESSED_STATES = new int[]{
             android.R.attr.state_pressed
     };
     private static final int STATE_DRAGGING = 2;
@@ -296,12 +296,12 @@ class FastScroller<T extends AbsListView & FastScrollerCallback> {
                 mSectionIndexer = (SectionIndexer) adapter;
                 mSections = mSectionIndexer.getSections();
                 if (mSections == null) {
-                    mSections = new String[] {
+                    mSections = new String[]{
                             " "
                     };
                 }
             } else {
-                mSections = new String[] {
+                mSections = new String[]{
                         " "
                 };
             }
@@ -314,7 +314,7 @@ class FastScroller<T extends AbsListView & FastScrollerCallback> {
     }
 
     private int getThumbPositionForListPosition(int firstVisibleItem, int visibleItemCount,
-            int totalItemCount) {
+                                                int totalItemCount) {
         if (mSectionIndexer == null || mListAdapter == null) {
             getSectionsFromIndexer();
         }
@@ -437,7 +437,7 @@ class FastScroller<T extends AbsListView & FastScrollerCallback> {
     }
 
     void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
-            int totalItemCount) {
+                  int totalItemCount) {
         if (mItemCount != totalItemCount && visibleItemCount > 0) {
             mItemCount = totalItemCount;
             mLongList = mItemCount / visibleItemCount >= MIN_PAGES;

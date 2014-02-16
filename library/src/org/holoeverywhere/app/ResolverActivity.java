@@ -1,21 +1,6 @@
 
 package org.holoeverywhere.app;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import org.holoeverywhere.LayoutInflater;
-import org.holoeverywhere.R;
-import org.holoeverywhere.internal.AlertController;
-import org.holoeverywhere.widget.Button;
-import org.holoeverywhere.widget.GridView;
-import org.holoeverywhere.widget.ListView;
-import org.holoeverywhere.widget.TextView;
-
 import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -42,6 +27,21 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
+import org.holoeverywhere.LayoutInflater;
+import org.holoeverywhere.R;
+import org.holoeverywhere.widget.AlertController;
+import org.holoeverywhere.widget.Button;
+import org.holoeverywhere.widget.GridView;
+import org.holoeverywhere.widget.ListView;
+import org.holoeverywhere.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
 public abstract class ResolverActivity extends AlertActivity implements
         AdapterView.OnItemClickListener {
     private final class DisplayResolveInfo {
@@ -52,7 +52,7 @@ public abstract class ResolverActivity extends AlertActivity implements
         ResolveInfo ri;
 
         DisplayResolveInfo(ResolveInfo pri, CharSequence pLabel,
-                CharSequence pInfo, Intent pOrigIntent) {
+                           CharSequence pInfo, Intent pOrigIntent) {
             ri = pri;
             displayLabel = pLabel;
             extendedInfo = pInfo;
@@ -80,7 +80,7 @@ public abstract class ResolverActivity extends AlertActivity implements
         private List<DisplayResolveInfo> mList;
 
         public ResolveListAdapter(Context context, Intent intent,
-                Intent[] initialIntents, List<ResolveInfo> rList, int launchedFromUid) {
+                                  Intent[] initialIntents, List<ResolveInfo> rList, int launchedFromUid) {
             mIntent = new Intent(intent);
             mIntent.setComponent(null);
             mInitialIntents = initialIntents;
@@ -166,7 +166,7 @@ public abstract class ResolverActivity extends AlertActivity implements
         }
 
         private void processGroup(List<ResolveInfo> rList, int start, int end, ResolveInfo ro,
-                CharSequence roLabel) {
+                                  CharSequence roLabel) {
             int num = end - start + 1;
             if (num == 1) {
                 mList.add(new DisplayResolveInfo(ro, roLabel, null, null));
@@ -212,7 +212,7 @@ public abstract class ResolverActivity extends AlertActivity implements
             } else {
                 mCurrentResolveList = mPm.queryIntentActivities(
                         mIntent, PackageManager.MATCH_DEFAULT_ONLY
-                                | (mAlwaysUseOption ? PackageManager.GET_RESOLVED_FILTER : 0));
+                        | (mAlwaysUseOption ? PackageManager.GET_RESOLVED_FILTER : 0));
                 if (mCurrentResolveList != null) {
                     for (int i = mCurrentResolveList.size() - 1; i >= 0; i--) {
                         ActivityInfo ai = mCurrentResolveList.get(i).activityInfo;
@@ -347,7 +347,7 @@ public abstract class ResolverActivity extends AlertActivity implements
     private boolean mShowExtended;
 
     public int checkComponentPermission(String permission, int uid,
-            int owningUid, boolean exported) {
+                                        int owningUid, boolean exported) {
         if (uid == 0 || uid == Process.SYSTEM_UID) {
             return PackageManager.PERMISSION_GRANTED;
         }
@@ -499,8 +499,8 @@ public abstract class ResolverActivity extends AlertActivity implements
     }
 
     protected void onCreate(Bundle savedInstanceState, Intent intent,
-            CharSequence title, Intent[] initialIntents, List<ResolveInfo> rList,
-            boolean alwaysUseOption) {
+                            CharSequence title, Intent[] initialIntents, List<ResolveInfo> rList,
+                            boolean alwaysUseOption) {
         super.onCreate(savedInstanceState);
         try {
             mLaunchedFromUid = getPackageManager().getApplicationInfo(getPackageName(), 0).uid;

@@ -1,16 +1,16 @@
 
 package org.holoeverywhere.app;
 
+import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+
 import org.holoeverywhere.LayoutInflater;
 import org.holoeverywhere.R;
 import org.holoeverywhere.addon.AddonTabber;
 import org.holoeverywhere.addon.AddonTabber.AddonTabberCallback;
 import org.holoeverywhere.addon.AddonTabber.AddonTabberF;
 import org.holoeverywhere.app.TabSwipeController.TabInfo;
-
-import android.os.Bundle;
-import android.view.View;
-import android.view.ViewGroup;
 
 /**
  * This fragment class implement tabs + swipe navigation pattern<br />
@@ -35,7 +35,7 @@ public abstract class TabSwipeFragment extends Fragment
 
     @Override
     public TabInfo addTab(CharSequence title, Class<? extends Fragment> fragmentClass,
-            Bundle fragmentArguments) {
+                          Bundle fragmentArguments) {
         return addonTabber().addTab(title, fragmentClass, fragmentArguments);
     }
 
@@ -46,7 +46,7 @@ public abstract class TabSwipeFragment extends Fragment
 
     @Override
     public TabInfo addTab(int title, Class<? extends Fragment> fragmentClass,
-            Bundle fragmentArguments) {
+                          Bundle fragmentArguments) {
         return addonTabber().addTab(title, fragmentClass, fragmentArguments);
     }
 
@@ -79,6 +79,16 @@ public abstract class TabSwipeFragment extends Fragment
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         addonTabber();
+    }
+
+    @Override
+    public int getCurrentTab() {
+        return addonTabber().getCurrentTab();
+    }
+
+    @Override
+    public TabInfo getTabAt(int position) {
+        return addonTabber().getTabAt(position);
     }
 
     @Override

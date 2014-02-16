@@ -1,6 +1,9 @@
 
 package org.holoeverywhere.addon;
 
+import android.os.Bundle;
+import android.view.View;
+
 import org.holoeverywhere.R;
 import org.holoeverywhere.app.Activity;
 import org.holoeverywhere.app.Fragment;
@@ -9,13 +12,34 @@ import org.holoeverywhere.app.TabSwipeController.TabInfo;
 import org.holoeverywhere.app.TabSwipeInterface;
 import org.holoeverywhere.widget.ViewPager;
 
-import android.os.Bundle;
-import android.view.View;
-
 public class AddonTabber extends IAddon {
+    public AddonTabber() {
+        registerActivity(AddonTabberA.class);
+        registerFragment(AddonTabberF.class);
+    }
+
+    public static interface AddonTabberCallback {
+        public void onHandleTabs();
+    }
+
     public static class AddonTabberA extends IAddonActivity implements TabSwipeInterface<TabInfo> {
         private TabSwipeController mController;
         private AddonTabberCallback mTabberCallback;
+
+        @Override
+        public int getCurrentTab() {
+            return mController.getCurrentTab();
+        }
+
+        @Override
+        public void setCurrentTab(int position) {
+            mController.setCurrentTab(position);
+        }
+
+        @Override
+        public TabInfo getTabAt(int position) {
+            return mController.getTabAt(position);
+        }
 
         @Override
         public TabInfo addTab(CharSequence title, Class<? extends Fragment> fragmentClass) {
@@ -24,7 +48,7 @@ public class AddonTabber extends IAddon {
 
         @Override
         public TabInfo addTab(CharSequence title, Class<? extends Fragment> fragmentClass,
-                Bundle fragmentArguments) {
+                              Bundle fragmentArguments) {
             return mController.addTab(title, fragmentClass, fragmentArguments);
         }
 
@@ -35,7 +59,7 @@ public class AddonTabber extends IAddon {
 
         @Override
         public TabInfo addTab(int title, Class<? extends Fragment> fragmentClass,
-                Bundle fragmentArguments) {
+                              Bundle fragmentArguments) {
             return mController.addTab(title, fragmentClass, fragmentArguments);
         }
 
@@ -64,8 +88,17 @@ public class AddonTabber extends IAddon {
             return mController.getOnTabSelectedListener();
         }
 
+        @Override
+        public void setOnTabSelectedListener(OnTabSelectedListener onTabSelectedListener) {
+            mController.setOnTabSelectedListener(onTabSelectedListener);
+        }
+
         public AddonTabberCallback getTabberCallback() {
             return mTabberCallback;
+        }
+
+        public void setTabberCallback(AddonTabberCallback tabberCallback) {
+            mTabberCallback = tabberCallback;
         }
 
         @Override
@@ -74,8 +107,18 @@ public class AddonTabber extends IAddon {
         }
 
         @Override
+        public void setSmoothScroll(boolean smoothScroll) {
+            mController.setSmoothScroll(smoothScroll);
+        }
+
+        @Override
         public boolean isSwipeEnabled() {
             return mController.isSwipeEnabled();
+        }
+
+        @Override
+        public void setSwipeEnabled(boolean swipeEnabled) {
+            mController.setSwipeEnabled(swipeEnabled);
         }
 
         @Override
@@ -131,6 +174,16 @@ public class AddonTabber extends IAddon {
         public TabInfo removeTab(TabInfo tabInfo) {
             return mController.removeTab(tabInfo);
         }
+    }
+
+    public static class AddonTabberF extends IAddonFragment implements TabSwipeInterface<TabInfo> {
+        private TabSwipeController mController;
+        private AddonTabberCallback mTabberCallback;
+
+        @Override
+        public int getCurrentTab() {
+            return mController.getCurrentTab();
+        }
 
         @Override
         public void setCurrentTab(int position) {
@@ -138,32 +191,9 @@ public class AddonTabber extends IAddon {
         }
 
         @Override
-        public void setOnTabSelectedListener(OnTabSelectedListener onTabSelectedListener) {
-            mController.setOnTabSelectedListener(onTabSelectedListener);
+        public TabInfo getTabAt(int position) {
+            return mController.getTabAt(position);
         }
-
-        @Override
-        public void setSmoothScroll(boolean smoothScroll) {
-            mController.setSmoothScroll(smoothScroll);
-        }
-
-        @Override
-        public void setSwipeEnabled(boolean swipeEnabled) {
-            mController.setSwipeEnabled(swipeEnabled);
-        }
-
-        public void setTabberCallback(AddonTabberCallback tabberCallback) {
-            mTabberCallback = tabberCallback;
-        }
-    }
-
-    public static interface AddonTabberCallback {
-        public void onHandleTabs();
-    }
-
-    public static class AddonTabberF extends IAddonFragment implements TabSwipeInterface<TabInfo> {
-        private TabSwipeController mController;
-        private AddonTabberCallback mTabberCallback;
 
         @Override
         public TabInfo addTab(CharSequence title, Class<? extends Fragment> fragmentClass) {
@@ -172,7 +202,7 @@ public class AddonTabber extends IAddon {
 
         @Override
         public TabInfo addTab(CharSequence title, Class<? extends Fragment> fragmentClass,
-                Bundle fragmentArguments) {
+                              Bundle fragmentArguments) {
             return mController.addTab(title, fragmentClass, fragmentArguments);
         }
 
@@ -183,7 +213,7 @@ public class AddonTabber extends IAddon {
 
         @Override
         public TabInfo addTab(int title, Class<? extends Fragment> fragmentClass,
-                Bundle fragmentArguments) {
+                              Bundle fragmentArguments) {
             return mController.addTab(title, fragmentClass, fragmentArguments);
         }
 
@@ -199,7 +229,7 @@ public class AddonTabber extends IAddon {
 
         protected TabSwipeController createController() {
             return new TabSwipeController(get().getActivity(),
-                    get().getFragmentManager(), get().getSupportActionBar()) {
+                    get().getChildFragmentManager(), get().getSupportActionBar()) {
                 @Override
                 protected void onHandleTabs() {
                     AddonTabberF.this.onHandleTabs();
@@ -212,8 +242,17 @@ public class AddonTabber extends IAddon {
             return mController.getOnTabSelectedListener();
         }
 
+        @Override
+        public void setOnTabSelectedListener(OnTabSelectedListener onTabSelectedListener) {
+            mController.setOnTabSelectedListener(onTabSelectedListener);
+        }
+
         public AddonTabberCallback getTabberCallback() {
             return mTabberCallback;
+        }
+
+        public void setTabberCallback(AddonTabberCallback tabberCallback) {
+            mTabberCallback = tabberCallback;
         }
 
         @Override
@@ -222,8 +261,18 @@ public class AddonTabber extends IAddon {
         }
 
         @Override
+        public void setSmoothScroll(boolean smoothScroll) {
+            mController.setSmoothScroll(smoothScroll);
+        }
+
+        @Override
         public boolean isSwipeEnabled() {
             return mController.isSwipeEnabled();
+        }
+
+        @Override
+        public void setSwipeEnabled(boolean swipeEnabled) {
+            mController.setSwipeEnabled(swipeEnabled);
         }
 
         @Override
@@ -277,34 +326,5 @@ public class AddonTabber extends IAddon {
         public TabInfo removeTab(TabInfo tabInfo) {
             return mController.removeTab(tabInfo);
         }
-
-        @Override
-        public void setCurrentTab(int position) {
-            mController.setCurrentTab(position);
-        }
-
-        @Override
-        public void setOnTabSelectedListener(OnTabSelectedListener onTabSelectedListener) {
-            mController.setOnTabSelectedListener(onTabSelectedListener);
-        }
-
-        @Override
-        public void setSmoothScroll(boolean smoothScroll) {
-            mController.setSmoothScroll(smoothScroll);
-        }
-
-        @Override
-        public void setSwipeEnabled(boolean swipeEnabled) {
-            mController.setSwipeEnabled(swipeEnabled);
-        }
-
-        public void setTabberCallback(AddonTabberCallback tabberCallback) {
-            mTabberCallback = tabberCallback;
-        }
-    }
-
-    public AddonTabber() {
-        registerActivity(AddonTabberA.class);
-        registerFragment(AddonTabberF.class);
     }
 }

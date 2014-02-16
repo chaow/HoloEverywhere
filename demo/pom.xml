@@ -8,26 +8,36 @@
 
 	<parent>
 		<groupId>org.holoeverywhere</groupId>
-		<artifactId>application</artifactId>
-		<version>1.6.9-SNAPSHOT</version>
-		<relativePath>../application/pom.xml</relativePath>
+		<artifactId>parent</artifactId>
+		<version>2.1.1-SNAPSHOT</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<dependencies>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>android</groupId>
+            <artifactId>android</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
-		<dependency>
+        <dependency>
+            <groupId>org.holoeverywhere</groupId>
+            <artifactId>library</artifactId>
+            <version>${project.version}</version>
+            <type>apklib</type>
+        </dependency>
+
+        <dependency>
 			<groupId>org.holoeverywhere</groupId>
 			<artifactId>addon-slider</artifactId>
+			<version>${project.version}</version>
 			<type>apklib</type>
 		</dependency>
 
 		<dependency>
 			<groupId>org.holoeverywhere</groupId>
 			<artifactId>addon-preferences</artifactId>
+			<version>${project.version}</version>
 			<type>apklib</type>
 		</dependency>
 	</dependencies>
@@ -37,20 +47,8 @@
 
 		<plugins>
 			<plugin>
-				<groupId>org.holoeverywhere</groupId>
-				<artifactId>resbuilder</artifactId>
-				<configuration>
-					<buildAll>false</buildAll>
-					<includeDirs>
-						<dir>${project.basedir}/resbuilder</dir>
-						<dir>${project.basedir}/../library/resbuilder</dir>
-					</includeDirs>
-					<inputFiles>
-						<file>strings.json:strings</file>
-						<file>themes.json:styles</file>
-						<file>attrs.json:attrs</file>
-					</inputFiles>
-				</configuration>
+				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+				<artifactId>android-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>

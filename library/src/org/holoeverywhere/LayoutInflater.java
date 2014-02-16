@@ -1,27 +1,10 @@
 
 package org.holoeverywhere;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.holoeverywhere.SystemServiceManager.SystemServiceCreator;
-import org.holoeverywhere.SystemServiceManager.SystemServiceCreator.SystemService;
-import org.holoeverywhere.app.Fragment;
-import org.holoeverywhere.internal.DialogTitle;
-import org.holoeverywhere.internal.NumberPickerEditText;
-import org.holoeverywhere.util.WeaklyMap;
-import org.holoeverywhere.widget.FrameLayout;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
 import android.graphics.Canvas;
@@ -32,6 +15,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app._HoloFragmentInflater;
+import android.support.v7.internal.view.menu.ExpandedMenuView;
+import android.support.v7.internal.widget.ActionBarContainer;
+import android.support.v7.internal.widget.ActionBarView;
 import android.util.AttributeSet;
 import android.util.Xml;
 import android.view.InflateException;
@@ -39,111 +25,27 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 
-import com.actionbarsherlock.internal.view.menu.ExpandedMenuView;
-import com.actionbarsherlock.internal.view.menu.HoloListMenuItemView;
-import com.actionbarsherlock.internal.widget.ActionBarContainer;
-import com.actionbarsherlock.internal.widget.ActionBarView;
+import org.holoeverywhere.SystemServiceManager.SystemServiceCreator;
+import org.holoeverywhere.SystemServiceManager.SystemServiceCreator.SystemService;
+import org.holoeverywhere.app.ContextThemeWrapperPlus;
+import org.holoeverywhere.app.Dialog;
+import org.holoeverywhere.app.Fragment;
+import org.holoeverywhere.util.SparseIntArray;
+import org.holoeverywhere.widget.FrameLayout;
+import org.holoeverywhere.widget.NumberPicker;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public class LayoutInflater extends android.view.LayoutInflater implements Cloneable {
-    private static class BlinkLayout extends FrameLayout {
-        private static final int BLINK_DELAY = 500;
-        private static final int MESSAGE_BLINK = 0x42;
-
-        private boolean mBlink;
-        private boolean mBlinkState;
-        private final Handler mHandler;
-
-        public BlinkLayout(Context context, AttributeSet attrs) {
-            super(context, attrs);
-            mHandler = new Handler(new Handler.Callback() {
-                @Override
-                public boolean handleMessage(Message msg) {
-                    if (msg.what == MESSAGE_BLINK) {
-                        if (mBlink) {
-                            mBlinkState = !mBlinkState;
-                            makeBlink();
-                        }
-                        invalidate();
-                        return true;
-                    }
-                    return false;
-                }
-            });
-        }
-
-        @Override
-        protected void dispatchDraw(Canvas canvas) {
-            if (mBlinkState) {
-                super.dispatchDraw(canvas);
-            }
-        }
-
-        private void makeBlink() {
-            Message message = mHandler.obtainMessage(MESSAGE_BLINK);
-            mHandler.sendMessageDelayed(message, BLINK_DELAY);
-        }
-
-        @Override
-        protected void onAttachedToWindow() {
-            super.onAttachedToWindow();
-            mBlink = true;
-            mBlinkState = true;
-            makeBlink();
-        }
-
-        @Override
-        protected void onDetachedFromWindow() {
-            super.onDetachedFromWindow();
-            mBlink = false;
-            mBlinkState = true;
-            mHandler.removeMessages(MESSAGE_BLINK);
-        }
-    }
-
-    public interface Factory {
-        public View onCreateView(View parent, String name, Context context, AttributeSet attrs);
-    }
-
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private static final class Factory2Wrapper implements Factory {
-        private Factory2 mFactory;
-
-        public Factory2Wrapper(Factory2 factory) {
-            mFactory = factory;
-        }
-
-        @Override
-        public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
-            return mFactory.onCreateView(parent, name, context, attrs);
-        }
-    }
-
-    private static final class FactoryWrapper implements Factory {
-        private android.view.LayoutInflater.Factory mFactory;
-
-        public FactoryWrapper(android.view.LayoutInflater.Factory factory) {
-            mFactory = factory;
-        }
-
-        @Override
-        public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
-            return mFactory.onCreateView(name, context, attrs);
-        }
-    }
-
-    @SystemService(Context.LAYOUT_INFLATER_SERVICE)
-    public static class LayoutInflaterCreator implements
-            SystemServiceCreator<LayoutInflater> {
-        @Override
-        public LayoutInflater createService(Context context) {
-            return LayoutInflater.from(context);
-        }
-    }
-
-    public static interface OnInitInflaterListener {
-        public void onInitInflater(LayoutInflater inflater);
-    }
-
     private static final HashMap<String, Constructor<? extends View>> sConstructorMap =
             new HashMap<String, Constructor<? extends View>>();
     private static final Class<?>[] sConstructorSignature = {
@@ -151,10 +53,10 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
     };
     private static final Map<Class<?>, Method> sFinishInflateMethods =
             new HashMap<Class<?>, Method>(100);
-    private static final Map<Context, LayoutInflater> sInstances = new WeaklyMap<Context, LayoutInflater>();
-    private static OnInitInflaterListener sListener;
+    private static final Map<Context, LayoutInflater> sInstances = new WeakHashMap<Context, LayoutInflater>();
     private static final List<String> sPackages = new ArrayList<String>();
     private static final Map<String, String> sRemaps = new HashMap<String, String>();
+    private static final SparseIntArray sLayoutRemap = new SparseIntArray();
     private static final String TAG_1995 = "blink";
     private static final String TAG_INCLUDE = "include";
     private static final String TAG_MERGE = "merge";
@@ -168,11 +70,46 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
         registerPackage(HoloEverywhere.PACKAGE + ".widget");
 
         asInternal(ActionBarView.class);
-        asInternal(HoloListMenuItemView.class);
         asInternal(ExpandedMenuView.class);
         asInternal(ActionBarContainer.class);
-        asInternal(DialogTitle.class);
-        asInternal(NumberPickerEditText.class);
+        asInternal(Dialog.DialogTitle.class);
+        asInternal(NumberPicker.NumberPickerEditText.class);
+    }
+
+    private static OnInitInflaterListener sListener;
+    private final Fragment mChildFragment;
+    private final Object[] mConstructorArgs = new Object[2];
+    private final Context mContext;
+    private List<Factory> mFactories;
+    private Filter mFilter;
+    private HashMap<String, Boolean> mFilterMap;
+    private FragmentActivity mFragmentActivity;
+    private LayoutInflater mParentInflater;
+
+    protected LayoutInflater(android.view.LayoutInflater original,
+                             Context newContext) {
+        this(original, newContext, null);
+    }
+
+    protected LayoutInflater(android.view.LayoutInflater original, Context newContext, Fragment childFragment) {
+        this(newContext, childFragment);
+        setParent(original);
+    }
+
+    protected LayoutInflater(Context context) {
+        this(context, null);
+    }
+
+    protected LayoutInflater(Context context, Fragment childFragment) {
+        super(context);
+        if (context == null) {
+            throw new IllegalArgumentException("Context cannot be null");
+        }
+        mChildFragment = childFragment;
+        mContext = context;
+        if (LayoutInflater.sListener != null) {
+            LayoutInflater.sListener.onInitInflater(this);
+        }
     }
 
     private static void asInternal(Class<?> clazz) {
@@ -194,6 +131,10 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
         return inflater;
     }
 
+    public static LayoutInflater from(Context context, int theme) {
+        return from(new ContextThemeWrapperPlus(context, ThemeManager.getThemeResource(theme, false)));
+    }
+
     public static View inflate(Context context, int resource) {
         return from(context).inflate(resource, null);
     }
@@ -203,7 +144,7 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
     }
 
     public static View inflate(Context context, int resource, ViewGroup root,
-            boolean attachToRoot) {
+                               boolean attachToRoot) {
         return from(context).inflate(resource, root, attachToRoot);
     }
 
@@ -237,42 +178,62 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
         LayoutInflater.sRemaps.put(from, to);
     }
 
+    /**
+     * Hack for overriding android default layouts for custom.<br />
+     * For example, if some parts of android framework try to inflate layout {@link android.R.layout#simple_list_item_1}
+     * you can override this behavior and replace system layout by custom<br />
+     * Just call register(android.R.layout.simple_list_item_1, R.layout.my_simple_list_item)<br />
+     * <br />
+     * Be sure that you need for it before using. You are warned.
+     */
+    public static void register(int fromId, int toId) {
+        if (toId == 0) {
+            sLayoutRemap.delete(fromId);
+        } else {
+            sLayoutRemap.put(fromId, toId);
+        }
+    }
+
+    /**
+     * Resolve ids for given name in each package (android and application) and then call {@link #register(int, int)}
+     */
+    public static void register(Context context, String name) {
+        final Resources res = context.getResources();
+        int androidId = res.getIdentifier(name, "layout", "android");
+        int appId = res.getIdentifier(name, "layout", context.getPackageName());
+        if (androidId != 0 && appId != 0) {
+            register(androidId, appId);
+        } else {
+            HoloEverywhere.warn("Failed to register layout remapping:\n" +
+                    "  Android ID: 0x%8x\n" +
+                    "  Application ID: 0x%8x",
+                    androidId, appId);
+        }
+    }
+
+    /**
+     * Resolve ids for given id in each package (android and application) and then call {@link #register(int, int)}
+     */
+    public static void register(Context context, int id) {
+        register(context, context.getResources().getResourceName(id));
+    }
+
     public static void registerPackage(String packageName) {
-        packageName = Package.getPackage(packageName).getName();
-        if (!sPackages.contains(packageName)) {
+        packageName = resolveFullPackageName(packageName);
+
+        if (packageName != null && !sPackages.contains(packageName)) {
             sPackages.add(packageName);
         }
     }
 
-    /**
-     * @deprecated Use {@link #register(Class<? extends View>...)} instead
-     */
-    @Deprecated
-    public static void remap(Class<? extends View>... classes) {
-        register(classes);
-    }
+    private static String resolveFullPackageName(String packageName) {
+        Package resolvedPackage = Package.getPackage(packageName);
 
-    /**
-     * @deprecated Use {@link #register(Class<? extends View>)} instead
-     */
-    @Deprecated
-    public static void remap(Class<? extends View> clazz) {
-        register(clazz);
-    }
-
-    @Deprecated
-    public static void remap(String prefix, String... classess) {
-        for (String clazz : classess) {
-            LayoutInflater.sRemaps.put(clazz, prefix + "." + clazz);
+        if (resolvedPackage == null) {
+            return null;
         }
-    }
 
-    /**
-     * @deprecated Use {@link #register(String,String)} instead
-     */
-    @Deprecated
-    public static void remapHard(String from, String to) {
-        register(from, to);
+        return resolvedPackage.getName();
     }
 
     public static void removeInstance(Context context) {
@@ -281,44 +242,6 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
 
     public static void setOnInitInflaterListener(OnInitInflaterListener listener) {
         sListener = listener;
-    }
-
-    private final Fragment mChildFragment;
-    private Map<Context, LayoutInflater> mClonedInstances;
-    private final Object[] mConstructorArgs = new Object[2];
-    private final Context mContext;
-    private List<Factory> mFactories;
-    private Filter mFilter;
-    private HashMap<String, Boolean> mFilterMap;
-    private FragmentActivity mFragmentActivity;
-    private Map<Fragment, LayoutInflater> mFragmentChildInstances;
-    private LayoutInflater mParentInflater;
-
-    protected LayoutInflater(android.view.LayoutInflater original,
-            Context newContext) {
-        this(original, newContext, null);
-    }
-
-    protected LayoutInflater(android.view.LayoutInflater original,
-            Context newContext, Fragment childFragment) {
-        this(original.getContext(), childFragment);
-        setParent(original);
-    }
-
-    protected LayoutInflater(Context context) {
-        this(context, null);
-    }
-
-    protected LayoutInflater(Context context, Fragment childFragment) {
-        super(context);
-        if (context == null) {
-            throw new IllegalArgumentException("Context cannot be null");
-        }
-        mChildFragment = childFragment;
-        mContext = context;
-        if (LayoutInflater.sListener != null) {
-            LayoutInflater.sListener.onInitInflater(this);
-        }
     }
 
     public View _createView(String name, String prefix, AttributeSet attrs)
@@ -411,15 +334,7 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
 
     @Override
     public LayoutInflater cloneInContext(Context newContext) {
-        if (mClonedInstances == null) {
-            mClonedInstances = new HashMap<Context, LayoutInflater>();
-        }
-        LayoutInflater inflater = mClonedInstances.get(newContext);
-        if (inflater == null) {
-            inflater = new LayoutInflater(this, newContext);
-            mClonedInstances.put(newContext, inflater);
-        }
-        return inflater;
+        return new LayoutInflater(this, newContext);
     }
 
     View createViewFromTag(View parent, String name, AttributeSet attrs) {
@@ -470,8 +385,20 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
         return mFilter;
     }
 
+    @Override
+    public void setFilter(Filter filter) {
+        mFilter = filter;
+        if (filter != null) {
+            mFilterMap = new HashMap<String, Boolean>();
+        }
+    }
+
     public FragmentActivity getFragmentActivity() {
         return mFragmentActivity;
+    }
+
+    public void setFragmentActivity(FragmentActivity fragmentActivity) {
+        mFragmentActivity = fragmentActivity;
     }
 
     public View inflate(int resource) {
@@ -485,7 +412,7 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
 
     @Override
     public View inflate(int resource, ViewGroup root, boolean attachToRoot) {
-        return inflate(getContext().getResources().getLayout(resource), root, attachToRoot);
+        return inflate(getContext().getResources().getLayout(sLayoutRemap.get(resource, resource)), root, attachToRoot);
     }
 
     public View inflate(XmlPullParser parser) {
@@ -499,7 +426,7 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
 
     @Override
     public View inflate(XmlPullParser parser, ViewGroup root,
-            boolean attachToRoot) {
+                        boolean attachToRoot) {
         synchronized (mConstructorArgs) {
             final AttributeSet attrs = Xml.asAttributeSet(parser);
             mConstructorArgs[0] = mContext;
@@ -564,15 +491,7 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
         if (mParentInflater != null) {
             return mParentInflater.obtainFragmentChildInflater(fragment);
         }
-        if (mFragmentChildInstances == null) {
-            mFragmentChildInstances = new WeaklyMap<Fragment, LayoutInflater>();
-        }
-        LayoutInflater inflater = mFragmentChildInstances.get(fragment);
-        if (inflater == null) {
-            mFragmentChildInstances.put(fragment,
-                    inflater = new LayoutInflater(this, mContext, fragment));
-        }
-        return inflater;
+        return new LayoutInflater(this, mContext, fragment);
     }
 
     @Override
@@ -646,7 +565,7 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
                         }
                         rInflate(childParser, view, childAttrs, true);
                         TypedArray a = mContext.obtainStyledAttributes(attrs,
-                                new int[] {
+                                new int[]{
                                         android.R.attr.id,
                                         android.R.attr.visibility
                                 }, 0, 0);
@@ -696,14 +615,11 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
 
     @SuppressLint("NewApi")
     private View prepareView(View view) {
-        if (HoloEverywhere.DISABLE_OVERSCROLL_EFFECT && VERSION.SDK_INT >= 9) {
-            view.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        }
         return view;
     }
 
     void rInflate(XmlPullParser parser, View parent, final AttributeSet attrs,
-            boolean finishInflate) throws XmlPullParserException, IOException {
+                  boolean finishInflate) throws XmlPullParserException, IOException {
         final int depth = parser.getDepth();
         int type;
         while (((type = parser.next()) != XmlPullParser.END_TAG ||
@@ -744,6 +660,9 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
                         method = clazz.getDeclaredMethod("onFinishInflate", (Class<?>[]) null);
                     } catch (Exception e) {
                         clazz = clazz.getSuperclass();
+                    } catch (NoClassDefFoundError e) {
+                        // HE#596 - Let's end the search here for those less than API 14
+                        clazz = Object.class;
                     }
                 }
                 if (method != null) {
@@ -774,18 +693,6 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
         setFactory(new Factory2Wrapper(factory));
     }
 
-    @Override
-    public void setFilter(Filter filter) {
-        mFilter = filter;
-        if (filter != null) {
-            mFilterMap = new HashMap<String, Boolean>();
-        }
-    }
-
-    public void setFragmentActivity(FragmentActivity fragmentActivity) {
-        mFragmentActivity = fragmentActivity;
-    }
-
     protected LayoutInflater setParent(android.view.LayoutInflater original) {
         if (original == this) {
             return this;
@@ -813,5 +720,103 @@ public class LayoutInflater extends android.view.LayoutInflater implements Clone
             }
         }
         return this;
+    }
+
+    public interface Factory {
+        public View onCreateView(View parent, String name, Context context, AttributeSet attrs);
+    }
+
+    public static interface OnInitInflaterListener {
+        public void onInitInflater(LayoutInflater inflater);
+    }
+
+    private static class BlinkLayout extends FrameLayout {
+        private static final int BLINK_DELAY = 500;
+        private static final int MESSAGE_BLINK = 0x42;
+        private final Handler mHandler;
+        private boolean mBlink;
+        private boolean mBlinkState;
+
+        public BlinkLayout(Context context, AttributeSet attrs) {
+            super(context, attrs);
+            mHandler = new Handler(new Handler.Callback() {
+                @Override
+                public boolean handleMessage(Message msg) {
+                    if (msg.what == MESSAGE_BLINK) {
+                        if (mBlink) {
+                            mBlinkState = !mBlinkState;
+                            makeBlink();
+                        }
+                        invalidate();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            if (mBlinkState) {
+                super.dispatchDraw(canvas);
+            }
+        }
+
+        private void makeBlink() {
+            Message message = mHandler.obtainMessage(MESSAGE_BLINK);
+            mHandler.sendMessageDelayed(message, BLINK_DELAY);
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            mBlink = true;
+            mBlinkState = true;
+            makeBlink();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            mBlink = false;
+            mBlinkState = true;
+            mHandler.removeMessages(MESSAGE_BLINK);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    private static final class Factory2Wrapper implements Factory {
+        private Factory2 mFactory;
+
+        public Factory2Wrapper(Factory2 factory) {
+            mFactory = factory;
+        }
+
+        @Override
+        public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+            return mFactory.onCreateView(parent, name, context, attrs);
+        }
+    }
+
+    private static final class FactoryWrapper implements Factory {
+        private android.view.LayoutInflater.Factory mFactory;
+
+        public FactoryWrapper(android.view.LayoutInflater.Factory factory) {
+            mFactory = factory;
+        }
+
+        @Override
+        public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+            return mFactory.onCreateView(name, context, attrs);
+        }
+    }
+
+    @SystemService(Context.LAYOUT_INFLATER_SERVICE)
+    public static class LayoutInflaterCreator implements
+            SystemServiceCreator<LayoutInflater> {
+        @Override
+        public LayoutInflater createService(Context context) {
+            return LayoutInflater.from(context);
+        }
     }
 }

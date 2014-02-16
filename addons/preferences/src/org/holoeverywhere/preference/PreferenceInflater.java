@@ -1,13 +1,6 @@
 
 package org.holoeverywhere.preference;
 
-import java.io.IOException;
-
-import org.holoeverywhere.internal.GenericInflater;
-import org.holoeverywhere.util.XmlUtils;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -18,21 +11,28 @@ import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 
+import org.holoeverywhere.app.GenericInflater;
+import org.holoeverywhere.util.XmlUtils;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
+
 public class PreferenceInflater extends GenericInflater<Preference, PreferenceGroup> {
     private static final String EXTRA_TAG_NAME = "extra";
     private static final String INTENT_TAG_NAME = "intent";
 
     private static void parseBundleExtra(Resources resources, String tagName, AttributeSet attrs,
-            Bundle outBundle) throws XmlPullParserException {
+                                         Bundle outBundle) throws XmlPullParserException {
         TypedArray sa = resources.obtainAttributes(attrs, R.styleable.Extra);
-        String name = sa.getString(R.styleable.Extra_name);
+        String name = sa.getString(R.styleable.Extra_android_name);
         if (name == null) {
             sa.recycle();
             throw new XmlPullParserException("<" + tagName
                     + "> requires an holo:name attribute at "
                     + attrs.getPositionDescription());
         }
-        TypedValue v = sa.peekValue(R.styleable.Extra_value);
+        TypedValue v = sa.peekValue(R.styleable.Extra_android_value);
         if (v != null) {
             if (v.type == TypedValue.TYPE_STRING) {
                 CharSequence cs = v.coerceToString();
@@ -63,12 +63,12 @@ public class PreferenceInflater extends GenericInflater<Preference, PreferenceGr
         Intent intent = new Intent();
         TypedArray sa = resources.obtainAttributes(attrs,
                 R.styleable.Intent);
-        intent.setAction(sa.getString(R.styleable.Intent_action));
-        String data = sa.getString(R.styleable.Intent_data);
-        String mimeType = sa.getString(R.styleable.Intent_mimeType);
+        intent.setAction(sa.getString(R.styleable.Intent_android_action));
+        String data = sa.getString(R.styleable.Intent_android_data);
+        String mimeType = sa.getString(R.styleable.Intent_android_mimeType);
         intent.setDataAndType(data != null ? Uri.parse(data) : null, mimeType);
-        String packageName = sa.getString(R.styleable.Intent_targetPackage);
-        String className = sa.getString(R.styleable.Intent_targetClass);
+        String packageName = sa.getString(R.styleable.Intent_android_targetPackage);
+        String className = sa.getString(R.styleable.Intent_android_targetClass);
         if (packageName != null && className != null) {
             intent.setComponent(new ComponentName(packageName, className));
         }
@@ -83,7 +83,7 @@ public class PreferenceInflater extends GenericInflater<Preference, PreferenceGr
             String nodeName = parser.getName();
             if (nodeName.equals("category")) {
                 sa = resources.obtainAttributes(attrs, R.styleable.IntentCategory);
-                String cat = sa.getString(R.styleable.IntentCategory_name);
+                String cat = sa.getString(R.styleable.IntentCategory_android_name);
                 sa.recycle();
                 if (cat != null) {
                     intent.addCategory(cat);
@@ -110,7 +110,7 @@ public class PreferenceInflater extends GenericInflater<Preference, PreferenceGr
     }
 
     public PreferenceInflater(PreferenceInflater original,
-            PreferenceManager preferenceManager, Context newContext) {
+                              PreferenceManager preferenceManager, Context newContext) {
         super(original, PreferenceInit.context(newContext));
         init(preferenceManager);
     }
@@ -127,7 +127,7 @@ public class PreferenceInflater extends GenericInflater<Preference, PreferenceGr
 
     @Override
     protected boolean onCreateCustomFromTag(XmlPullParser parser,
-            Preference parentPreference, AttributeSet attrs)
+                                            Preference parentPreference, AttributeSet attrs)
             throws XmlPullParserException {
         final String tag = parser.getName();
         if (tag.equals(PreferenceInflater.INTENT_TAG_NAME)) {
@@ -165,7 +165,7 @@ public class PreferenceInflater extends GenericInflater<Preference, PreferenceGr
 
     @Override
     protected PreferenceGroup onMergeRoots(PreferenceGroup givenRoot,
-            boolean attachToGivenRoot, PreferenceGroup xmlRoot) {
+                                           boolean attachToGivenRoot, PreferenceGroup xmlRoot) {
         if (givenRoot == null) {
             xmlRoot.onAttachedToHierarchy(mPreferenceManager);
             return xmlRoot;

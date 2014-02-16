@@ -1,8 +1,6 @@
 
 package org.holoeverywhere.preference;
 
-import org.holoeverywhere.widget.EditText;
-
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Parcel;
@@ -12,6 +10,8 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+
+import org.holoeverywhere.widget.EditText;
 
 public class EditTextPreference extends DialogPreference {
     private static class SavedState extends BaseSavedState {
@@ -46,7 +46,7 @@ public class EditTextPreference extends DialogPreference {
 
     public EditTextPreference(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        mEditText = new EditText(getDialogContext(true));
+        mEditText = new EditText(getDialogContext(true), attrs);
         mEditText.setId(R.id.edit);
         mEditText.setEnabled(true);
     }

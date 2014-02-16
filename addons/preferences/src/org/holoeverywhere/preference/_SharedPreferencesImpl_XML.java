@@ -1,11 +1,10 @@
 
 package org.holoeverywhere.preference;
 
-import java.lang.ref.WeakReference;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.os.Build.VERSION;
+import android.util.Log;
 
 import org.holoeverywhere.app.Activity;
 import org.holoeverywhere.app.Application;
@@ -13,10 +12,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.os.Build.VERSION;
-import android.util.Log;
+import java.lang.ref.WeakReference;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 public final class _SharedPreferencesImpl_XML extends _SharedPreferencesBase {
     private final class EditorImpl extends _BaseEditor {
@@ -134,34 +134,35 @@ public final class _SharedPreferencesImpl_XML extends _SharedPreferencesBase {
 
     private static final class ListenerWrapper implements
             android.content.SharedPreferences.OnSharedPreferenceChangeListener {
-        private static final Map<OnSharedPreferenceChangeListener, WeakReference<ListenerWrapper>> sInstances =
-                new WeakHashMap<OnSharedPreferenceChangeListener, WeakReference<ListenerWrapper>>();
+        private static final Map<OnSharedPreferenceChangeListener, ListenerWrapper> sInstances =
+                new WeakHashMap<OnSharedPreferenceChangeListener, ListenerWrapper>();
 
         private static synchronized ListenerWrapper obtain(
                 SharedPreferences prefs,
                 OnSharedPreferenceChangeListener listener) {
-            WeakReference<ListenerWrapper> ref = sInstances.get(listener);
-            ListenerWrapper wrapper = ref == null ? null : ref.get();
+            ListenerWrapper wrapper = sInstances.get(listener);
             if (wrapper == null) {
-                sInstances.put(listener, new WeakReference<ListenerWrapper>(
-                        wrapper = new ListenerWrapper(prefs, listener)));
+                sInstances.put(listener, wrapper = new ListenerWrapper(prefs, listener));
             }
             return wrapper;
         }
 
-        private OnSharedPreferenceChangeListener listener;
+        private WeakReference<OnSharedPreferenceChangeListener> listenerRef;
         private SharedPreferences prefs;
 
         private ListenerWrapper(SharedPreferences prefs,
-                OnSharedPreferenceChangeListener listener) {
+                                OnSharedPreferenceChangeListener listener) {
             this.prefs = prefs;
-            this.listener = listener;
+            this.listenerRef = new WeakReference<OnSharedPreferenceChangeListener>(listener);
         }
 
         @Override
         public void onSharedPreferenceChanged(
                 android.content.SharedPreferences sharedPreferences, String key) {
-            listener.onSharedPreferenceChanged(prefs, key);
+            OnSharedPreferenceChangeListener listener = listenerRef.get();
+            if (listener != null) {
+                listener.onSharedPreferenceChanged(prefs, key);
+            }
         }
     }
 

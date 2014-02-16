@@ -1,15 +1,6 @@
 
 package org.holoeverywhere.widget;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
-import org.holoeverywhere.LayoutInflater;
-
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
@@ -18,6 +9,15 @@ import android.widget.BaseAdapter;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
+
+import org.holoeverywhere.LayoutInflater;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class ArrayAdapter<T> extends BaseAdapter implements Filterable {
     private class ArrayFilter extends Filter {
@@ -69,7 +69,7 @@ public class ArrayAdapter<T> extends BaseAdapter implements Filterable {
         @SuppressWarnings("unchecked")
         @Override
         protected void publishResults(CharSequence constraint,
-                FilterResults results) {
+                                      FilterResults results) {
             mObjects = (List<T>) results.values;
             if (results.count > 0) {
                 notifyDataSetChanged();
@@ -107,12 +107,12 @@ public class ArrayAdapter<T> extends BaseAdapter implements Filterable {
     }
 
     public ArrayAdapter(Context context, int resource, int textViewResourceId,
-            List<T> objects) {
+                        List<T> objects) {
         init(context, resource, textViewResourceId, objects);
     }
 
     public ArrayAdapter(Context context, int resource, int textViewResourceId,
-            T[] objects) {
+                        T[] objects) {
         init(context, resource, textViewResourceId, Arrays.asList(objects));
     }
 
@@ -177,7 +177,7 @@ public class ArrayAdapter<T> extends BaseAdapter implements Filterable {
     }
 
     private View createViewFromResource(int position, View convertView,
-            ViewGroup parent, int resource) {
+                                        ViewGroup parent, int resource) {
         View view;
         TextView text = null;
         if (convertView == null) {
@@ -257,7 +257,7 @@ public class ArrayAdapter<T> extends BaseAdapter implements Filterable {
     }
 
     private void init(Context context, int resource, int textViewResourceId,
-            List<T> objects) {
+                      List<T> objects) {
         mContext = context;
         mInflater = LayoutInflater.from(context);
         mResource = mDropDownResource = resource;

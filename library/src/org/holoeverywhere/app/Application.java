@@ -1,9 +1,11 @@
 
 package org.holoeverywhere.app;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.os.Build.VERSION;
+import android.os.Bundle;
+import android.support.v4.app._HoloFragmentInflater;
 
 import org.holoeverywhere.HoloEverywhere;
 import org.holoeverywhere.HoloEverywhere.PreferenceImpl;
@@ -13,7 +15,6 @@ import org.holoeverywhere.SystemServiceManager;
 import org.holoeverywhere.SystemServiceManager.SuperSystemService;
 import org.holoeverywhere.ThemeManager;
 import org.holoeverywhere.ThemeManager.SuperStartActivity;
-import org.holoeverywhere.addon.AddonSherlock;
 import org.holoeverywhere.addon.IAddon;
 import org.holoeverywhere.addon.IAddonApplication;
 import org.holoeverywhere.addon.IAddonAttacher;
@@ -21,32 +22,16 @@ import org.holoeverywhere.addon.IAddonBasicAttacher;
 import org.holoeverywhere.preference.PreferenceManagerHelper;
 import org.holoeverywhere.preference.SharedPreferences;
 
-import android.annotation.SuppressLint;
-import android.content.Intent;
-import android.os.Build.VERSION;
-import android.os.Bundle;
+import java.util.Collection;
 
 public class Application extends android.app.Application implements
         SuperStartActivity, SuperSystemService, IAddonAttacher<IAddonApplication> {
-    private static List<Class<? extends IAddon>> sInitialAddons;
     private static Application sLastInstance;
+
     static {
         SystemServiceManager.register(LayoutInflaterCreator.class);
-        addInitialAddon(AddonSherlock.class);
-    }
-
-    public static void addInitialAddon(Class<? extends IAddon> clazz) {
-        if (sInitialAddons == null) {
-            sInitialAddons = new ArrayList<Class<? extends IAddon>>();
-        }
-        sInitialAddons.add(clazz);
-    }
-
-    public static Application getLastInstance() {
-        return Application.sLastInstance;
-    }
-
-    public static void init() {
+        
+        _HoloFragmentInflater.init();
     }
 
     private final IAddonBasicAttacher<IAddonApplication, Application> mAttacher =
@@ -54,6 +39,13 @@ public class Application extends android.app.Application implements
 
     public Application() {
         Application.sLastInstance = this;
+    }
+
+    public static Application getLastInstance() {
+        return Application.sLastInstance;
+    }
+
+    public static void init() {
     }
 
     @Override
@@ -118,7 +110,14 @@ public class Application extends android.app.Application implements
 
     @Override
     public void onCreate() {
-        addon(sInitialAddons);
+        // Cruel fallback for some crazy people who using application like view context
+        // You are warned
+        // Really
+        if (ThemeManager.getThemeType(this) == ThemeManager.INVALID) {
+            setTheme(ThemeManager.getThemeResource(ThemeManager.getDefaultTheme()));
+        }
+
+        IAddonBasicAttacher.attachAnnotations(this);
         performAddonAction(new AddonCallback<IAddonApplication>() {
             @Override
             public void justAction(IAddonApplication addon) {
@@ -182,7 +181,7 @@ public class Application extends android.app.Application implements
     @Override
     @SuppressLint("NewApi")
     public void superStartActivity(Intent intent, int requestCode,
-            Bundle options) {
+                                   Bundle options) {
         if (VERSION.SDK_INT >= 16) {
             super.startActivity(intent, options);
         } else {

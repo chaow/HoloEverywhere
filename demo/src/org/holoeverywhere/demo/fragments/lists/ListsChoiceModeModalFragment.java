@@ -1,18 +1,17 @@
 
 package org.holoeverywhere.demo.fragments.lists;
 
+import android.annotation.SuppressLint;
+import android.os.Bundle;
+import android.support.v7.view.ActionMode;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+
 import org.holoeverywhere.demo.R;
 import org.holoeverywhere.widget.ArrayAdapter;
 import org.holoeverywhere.widget.ListView;
 import org.holoeverywhere.widget.ListView.MultiChoiceModeListener;
-
-import android.annotation.SuppressLint;
-import android.os.Bundle;
-import android.view.View;
-
-import com.actionbarsherlock.view.ActionMode;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
 
 public class ListsChoiceModeModalFragment extends ListsBaseFragment implements
         MultiChoiceModeListener {
@@ -80,7 +79,7 @@ public class ListsChoiceModeModalFragment extends ListsBaseFragment implements
         mList = getListView();
         mList.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
         mList.setMultiChoiceModeListener(this);
-        setListAdapter(ArrayAdapter.createFromResource(getActivity(), R.array.adjectives,
+        setListAdapter(ArrayAdapter.createFromResource(getActivity(), R.array.some_words,
                 R.layout.simple_list_item_multiple_choice));
     }
 

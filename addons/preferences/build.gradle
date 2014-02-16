@@ -1,22 +1,14 @@
-apply plugin: 'android-library'
+apply plugin: 'holoeverywhere-library'
 
-dependencies {
-  compile project(':library')
+holoeverywhere {
+    apply 'android_default.gradle'
+    upload.artifact = "addon-${project.name}"
 }
 
-android {
-  compileSdkVersion 17
-  buildToolsVersion '17'
+dependencies {
+    compile project(':library')
+}
 
-  defaultConfig {
-    targetSdkVersion 17
-  }
-
-  sourceSets {
-    main {
-      manifest.srcFile 'AndroidManifest.xml'
-      java.srcDirs = ['src']
-      res.srcDirs = ['res']
-    }
-  }
+afterEvaluate {
+    javadoc.exclude "**/_*.java"
 }

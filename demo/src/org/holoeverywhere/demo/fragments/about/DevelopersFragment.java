@@ -1,8 +1,11 @@
 
 package org.holoeverywhere.demo.fragments.about;
 
-import java.util.ArrayList;
-import java.util.List;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
 
 import org.holoeverywhere.app.ListFragment;
 import org.holoeverywhere.content.IntentCompat;
@@ -13,11 +16,8 @@ import org.holoeverywhere.widget.ArrayAdapter;
 import org.holoeverywhere.widget.Spinner;
 import org.holoeverywhere.widget.TextView;
 
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Bundle;
-import android.view.View;
-import android.view.ViewGroup;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DevelopersFragment extends ListFragment {
     private static final class Developer {
@@ -114,7 +114,7 @@ public class DevelopersFragment extends ListFragment {
         public void onClick() {
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setType("message/rfc822");
-            intent.putExtra(Intent.EXTRA_EMAIL, new String[] {
+            intent.putExtra(Intent.EXTRA_EMAIL, new String[]{
                     to
             });
             intent.putExtra(Intent.EXTRA_SUBJECT, subject);
@@ -191,15 +191,19 @@ public class DevelopersFragment extends ListFragment {
     private void prepareAdapter(DevelopersAdapter adapter) {
         Developer developer;
 
-        developer = new Developer(R.string.developer_sergey, R.string.developer_sergey_description);
+        developer = new Developer(R.string.developer_prototik, R.string.developer_prototik_desc);
         developer.link(new GPlusLink("103272077758668000975"));
         developer.link(new GithubLink("Prototik"));
         developer.link(new EmailLink("prototypegamez@gmail.com", "HoloEverywhere"));
         developer.link(new HabrahabrLink("Prototik"));
         add(developer);
 
-        developer = new Developer(R.string.developer_christophe,
-                R.string.developer_christophe_description);
+        developer = new Developer(R.string.developer_brais_gabin, R.string.developer_brais_gabin_desc);
+        developer.link(new GithubLink("BraisGabin"));
+        developer.link(new EmailLink("braisgabin@gmail.com", "HoloEverywhere"));
+        add(developer);
+
+        developer = new Developer(R.string.developer_wazabe, R.string.developer_wazabe_desc);
         developer.link(new GPlusLink("108315424589085456181"));
         developer.link(new GithubLink("ChristopheVersieux"));
         add(developer);

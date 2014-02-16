@@ -1,10 +1,12 @@
 
 package org.holoeverywhere.demo;
 
+
+import android.os.Bundle;
+
 import org.holoeverywhere.addon.AddonSlider;
-import org.holoeverywhere.addon.AddonSlider.AddonSliderA;
+import org.holoeverywhere.addon.Addons;
 import org.holoeverywhere.app.Activity;
-import org.holoeverywhere.app.Activity.Addons;
 import org.holoeverywhere.demo.fragments.MainFragment;
 import org.holoeverywhere.demo.fragments.OtherFragment;
 import org.holoeverywhere.demo.fragments.SettingsFragment;
@@ -12,11 +14,9 @@ import org.holoeverywhere.demo.fragments.about.AboutFragment;
 import org.holoeverywhere.demo.widget.DemoThemePicker;
 import org.holoeverywhere.slider.SliderMenu;
 
-import android.os.Bundle;
-
-@Addons(Activity.ADDON_SLIDER)
+@Addons(AddonSlider.class)
 public class DemoActivity extends Activity {
-    public AddonSliderA addonSlider() {
+    public AddonSlider.AddonSliderA addonSlider() {
         return addon(AddonSlider.class);
     }
 
